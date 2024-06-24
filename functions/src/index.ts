@@ -31,7 +31,7 @@ admin.initializeApp({
 const authService = new AuthService();
 
 //소셜 로그인
-export const signIn = onRequest(
+export const sign_in = onRequest(
   withApiResponseHandler(async (request : Request , response : Response) : Promise<ApiResponse>=>{
     const authHeader = request.headers.authorization;
 
