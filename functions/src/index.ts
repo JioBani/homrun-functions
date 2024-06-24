@@ -10,7 +10,7 @@
 import * as dotenv from 'dotenv';
 import { Response} from 'express';
 
-import {onRequest,Request} from "firebase-functions/v2/https";
+import {Request} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { AuthService } from "./auth/auth.service";
 
@@ -18,6 +18,8 @@ import { SocialProvider } from "./enum/social-provider.enum";
 import { ApiResponse } from "./model/api-response";
 import { BadRequestError, UnauthorizedError } from "./error/http.error";
 import { withApiResponseHandler } from './middleware/api-response-handler';
+
+import * as functions from "firebase-functions";
 
 dotenv.config();
 
@@ -31,7 +33,7 @@ admin.initializeApp({
 const authService = new AuthService();
 
 //소셜 로그인
-export const sign_in = onRequest(
+export const sign_in = functions.region("asia-northeast3").https.onRequest(
   withApiResponseHandler(async (request : Request , response : Response) : Promise<ApiResponse>=>{
     const authHeader = request.headers.authorization;
 
@@ -53,3 +55,5 @@ export const sign_in = onRequest(
     });
   })
 );
+
+
