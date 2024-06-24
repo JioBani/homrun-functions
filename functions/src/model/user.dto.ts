@@ -7,4 +7,24 @@ export class UserDto{
     displayName : string | undefined;
     birth : string | undefined;
     gender! : Gender
+
+    constructor({
+        socialProvider,
+        uid,
+        displayName,
+        birth,
+        gender,
+      }: {
+        socialProvider: SocialProvider;
+        uid: string;
+        displayName?: string;
+        birth?: string;
+        gender: Gender;
+      }) {
+        this.socialProvider = socialProvider;
+        this.uid = uid;
+        this.displayName = displayName;
+        this.birth = birth;
+        this.gender = gender;
+      }
 }
