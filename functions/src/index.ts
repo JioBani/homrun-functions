@@ -7,15 +7,18 @@
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
 
-import {onRequest} from "firebase-functions/v2/https";
+import * as dotenv from 'dotenv';
+import { Response} from 'express';
+
+import {onRequest,Request} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { AuthService } from "./auth/auth.service";
-import * as dotenv from 'dotenv';
 
-//import * as serviceAccount from "@/homerun-3e122-firebase-adminsdk-up403-843b4f161f.json";
+import { SocialProvider } from "./enum/social-provider.enum";
+import { ApiResponse } from "./model/api-response";
+import { BadRequestError, UnauthorizedError } from "./error/http.error";
+import { withApiResponseHandler } from './middleware/api-response-handler';
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
 dotenv.config();
 
 var serviceAccount = require(process.env.FB_SERVICE_ACCOUNT as string);
@@ -25,12 +28,28 @@ admin.initializeApp({
     databaseURL: "https://homerun-3e122-default-rtdb.asia-southeast1.firebasedatabase.app"
 });
 
-export const signIn = onRequest(async (request, response) => {
-  //logger.info("Hello signIn!", {structuredData: true});
-  //response.send("Hello from Firebase!");
+const authService = new AuthService();
 
-  const result = await new AuthService().signIn("",request.body);
-  response.send(result);
-});
+//소셜 로그인
+export const signIn = onRequest(
+  withApiResponseHandler(async (request : Request , response : Response) : Promise<ApiResponse>=>{
+    const authHeader = request.headers.authorization;
 
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedError();
+    }
 
+    const { social_provider } = request.body;
+
+    if (!Object.values(SocialProvider).includes(social_provider)) {
+      throw new BadRequestError({message : 'Invalid social provider'});
+    }
+
+    const result = await authService.signIn(authHeader.split(' ')[1] , social_provider);
+
+    return new ApiResponse({
+      status : 200,
+      data : result
+    });
+  })
+);
