@@ -4,7 +4,7 @@
 >
 > 팀프로젝트(기획자1 , 디자이너1, 개발자1)
 
-
+<img src="README.assets/2P_ 홈화면.png" alt="2P_ 홈화면" style="zoom:25%;" />
 
 ## 🛠 Skills
 
