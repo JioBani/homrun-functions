@@ -20,6 +20,7 @@ import { BadRequestError, UnauthorizedError } from "./error/http.error";
 import { withApiResponseHandler } from './middleware/api-response-handler';
 
 import * as functions from "firebase-functions";
+import { CommentService } from './comment/comment.service';
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ admin.initializeApp({
 });
 
 const authService = new AuthService();
+const commentService = new CommentService();
 
 //소셜 로그인
 export const sign_in = functions.region("asia-northeast3").https.onRequest(
@@ -48,6 +50,36 @@ export const sign_in = functions.region("asia-northeast3").https.onRequest(
     }
 
     const result = await authService.signIn(authHeader.split(' ')[1] , social_provider);
+
+    return new ApiResponse({
+      status : 200,
+      data : result
+    });
+  })
+);
+
+export const update_like_state = functions.region("asia-northeast3").https.onRequest(
+  withApiResponseHandler(async (request : Request , response : Response) : Promise<ApiResponse>=>{
+    const authHeader = request.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log("!authHeader || !authHeader.startsWith('Bearer ')");
+      throw UnauthorizedError.MissingTokenError();
+    }
+
+    const { doc, state } = request.body;
+
+    if (!doc || typeof state !== 'number') {
+      throw BadRequestError.InvalidParameterError("state");
+    }
+
+    const docRef = admin.firestore().doc(doc);
+
+    const result = await commentService.updateLikeState(
+      authHeader.split(' ')[1],
+      docRef,
+      state
+    );
 
     return new ApiResponse({
       status : 200,
