@@ -4,7 +4,7 @@ import { DecodedIdToken } from 'firebase-admin/auth';
 import { DocumentReference} from 'firebase-admin/firestore';
 import { LikeFields } from '../comment/values/like.fields.value';
 import { CommentFields } from './values/comment.fields.value';
-import { UnauthorizedError } from '../error/http.error';
+import { BadRequestError, UnauthorizedError } from '../error/http.error';
 import { CommentReferences } from './comment.references';
 
 //TODO error 코드
@@ -16,6 +16,11 @@ export class CommentService {
     async updateLikeState(customToken : string, doc : DocumentReference, state : number){
 
         var uid : DecodedIdToken;
+        
+
+        if(!(state === -1 || state === 0 || state === 1)){
+            throw BadRequestError.InvalidParameterError('state');
+        }
 
         try{
             uid = await firebaseAdmin.auth().verifyIdToken(customToken);
