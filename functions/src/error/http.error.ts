@@ -23,12 +23,25 @@ export class HttpError extends Error {
     constructor({ code = 40000, message = 'Bad Request' }: { code?: number; message?: string } = {}) {
       super(400, code, message);
     }
+
+    static InvalidParameterError(name : string) : BadRequestError{
+      return new BadRequestError({code : 40001 , message : `Parameter ${name} is invalid`});
+    } 
   }
   
   export class UnauthorizedError extends HttpError {
     constructor({ code = 40100, message = 'Unauthorized' }: { code?: number; message?: string } = {}) {
       super(401, code, message);
     }
+
+    static MissingTokenError() : UnauthorizedError{
+      return new UnauthorizedError({code : 40101 , message : 'Authorization token is missing'});
+    } 
+
+    static InvalidTokenError() : UnauthorizedError{
+      return new UnauthorizedError({code : 40102 , message : 'Authorization token is invalid'});
+    } 
+
   }
   
   export class ForbiddenError extends HttpError {
