@@ -21,6 +21,7 @@ import { withApiResponseHandler } from './middleware/api-response-handler';
 
 import * as functions from "firebase-functions";
 import { CommentService } from './comment/comment.service';
+import { SiteReviewService } from './site_review/site_review.service';
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ admin.initializeApp({
 
 const authService = new AuthService();
 const commentService = new CommentService();
+const siteReviewService = new SiteReviewService();
 
 //소셜 로그인
 export const sign_in = functions.region("asia-northeast3").https.onRequest(
@@ -87,5 +89,43 @@ export const update_like_state = functions.region("asia-northeast3").https.onReq
     });
   })
 );
+
+export const make_site_review_doc = functions.region("asia-northeast3").https.onRequest(
+  withApiResponseHandler(async (request : Request , response : Response) : Promise<ApiResponse>=>{
+    const authHeader = request.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log("!authHeader || !authHeader.startsWith('Bearer ')");
+      throw UnauthorizedError.MissingTokenError();
+    }
+
+    const { noticeId, title, content } = request.body;
+
+    if (!noticeId) {
+      throw BadRequestError.InvalidParameterError("noticeId");
+    }
+
+    if (!title) {
+      throw BadRequestError.InvalidParameterError("title");
+    }
+
+     if (!content) {
+      throw BadRequestError.InvalidParameterError("content");
+    }
+
+    const result = await siteReviewService.makeDocument(
+      authHeader.split(' ')[1],
+      noticeId,
+      title,
+      content
+    );
+
+    return new ApiResponse({
+      status : 200,
+      data : result
+    });
+  })
+);
+
 
 
