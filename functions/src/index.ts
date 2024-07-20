@@ -101,7 +101,7 @@ export const make_site_review_doc = functions.region("asia-northeast3").https.on
       throw UnauthorizedError.MissingTokenError();
     }
 
-    const { noticeId, title, content } = request.body;
+    const { noticeId, title, content ,thumbnailImageName} = request.body;
 
     if (!noticeId) {
       throw BadRequestError.InvalidParameterError("noticeId");
@@ -119,7 +119,8 @@ export const make_site_review_doc = functions.region("asia-northeast3").https.on
       authHeader.split(' ')[1],
       noticeId,
       title,
-      content
+      content,
+      thumbnailImageName
     );
 
     return new ApiResponse({
