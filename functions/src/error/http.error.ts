@@ -48,6 +48,10 @@ export class HttpError extends Error {
     constructor({ code = 40300, message = 'Forbidden' }: { code?: number; message?: string } = {}) {
       super(403, code, message);
     }
+
+    static UnauthorizedResourceError(): ForbiddenError {
+      return new ForbiddenError({ code: 40301, message: `Unauthorized access to resource` });
+    }
   }
   
   export class NotFoundError extends HttpError {
