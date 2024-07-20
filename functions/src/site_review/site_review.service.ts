@@ -1,8 +1,9 @@
 import { DecodedIdToken } from "firebase-admin/auth";
 import * as firebaseAdmin from 'firebase-admin';
-import { UnauthorizedError } from '../error/http.error';
+import { ForbiddenError, UnauthorizedError } from '../error/http.error';
 import { SiteReviewReferences } from "./site_review.references";
 import { DocumentReference } from "firebase-admin/firestore";
+import { SiteReviewFields } from "./value/site_review.fields";
 
 export class SiteReviewService{
     async makeDocument(token : string, noticeId : string, title : string , content : string) : Promise<String>{
@@ -36,5 +37,33 @@ export class SiteReviewService{
 
         //#3. 문서 ref 반환
         return docRef.path;
+    }
+
+    async deleteReview(token : DecodedIdToken, path : string) : Promise<void>{
+        //TODO 이미 삭제된 문서인지 예외를 던지도록
+        
+        //#. 리뷰 문서 가져오기
+        const doc = await firebaseAdmin.firestore().doc(path).get();       
+    
+        //#. 리뷰 소유권 확인
+        if(doc.data()?.[SiteReviewFields.writer] !== token.uid){
+            throw ForbiddenError.UnauthorizedResourceError();
+        }
+
+        //#. 리뷰 문서 삭제하기
+        await firebaseAdmin.firestore().doc(path).delete();
+
+        //#. 이미지 삭제하기
+        const imagePath = doc.data()?.[SiteReviewFields.imagesRefPath];
+
+        if (imagePath) {
+            const bucket = firebaseAdmin.storage().bucket();
+            const [files] = await bucket.getFiles({ prefix: imagePath });
+    
+            const deletePromises = files.map(file => file.delete());
+            Promise.all(deletePromises).catch(error=>{
+                console.error("Error deleting images:", error);
+            });
+        }      
     }
 }
