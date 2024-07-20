@@ -6,7 +6,13 @@ import { DocumentReference } from "firebase-admin/firestore";
 import { SiteReviewFields } from "./value/site_review.fields";
 
 export class SiteReviewService{
-    async makeDocument(token : string, noticeId : string, title : string , content : string) : Promise<String>{
+    async makeDocument(
+        token : string, 
+        noticeId : string, 
+        title : string , 
+        content : string , 
+        thumbnailImageName : string | undefined
+    ) : Promise<String>{
         //#1. 유저 확인
         var uid : DecodedIdToken;
         
@@ -29,12 +35,24 @@ export class SiteReviewService{
             writer: uid.uid,
             view: 0,
             imagesRefPath: "",
+            thumbnailRefPath : "",
         });
 
         //#2.3. 이미지 경로 업데이트 하기
 
-        await docRef.update({imagesRefPath : SiteReviewReferences.getReviewImagePath(noticeId , docRef.id)});
+        if(thumbnailImageName){
+            await docRef.update({
+                imagesRefPath : SiteReviewReferences.getReviewImagePath(noticeId , docRef.id),
+                thumbnailRefPath : `${SiteReviewReferences.getReviewImagePath(noticeId , docRef.id)}/${thumbnailImageName}`
+            });
+        }
+        else{
+            await docRef.update({
+                imagesRefPath : SiteReviewReferences.getReviewImagePath(noticeId , docRef.id),
+            });
+        }
 
+        
         //#3. 문서 ref 반환
         return docRef.path;
     }
