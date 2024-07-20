@@ -17,19 +17,21 @@ import { AuthService } from "./auth/auth.service";
 import { SocialProvider } from "./enum/social-provider.enum";
 import { ApiResponse } from "./model/api-response";
 import { BadRequestError, UnauthorizedError } from "./error/http.error";
-import { withApiResponseHandler } from './middleware/api-response-handler';
+import { withApiResponseHandler, withAuthHandler } from './middleware/api-response-handler';
 
 import * as functions from "firebase-functions";
 import { CommentService } from './comment/comment.service';
 import { SiteReviewService } from './site_review/site_review.service';
+import { DecodedIdToken } from 'firebase-admin/auth';
+import { FirebaseValue } from './value/firebase.value';
 
 dotenv.config();
 
-var serviceAccount = require(process.env.FB_SERVICE_ACCOUNT as string);
+const serviceAccount = require(process.env.FB_SERVICE_ACCOUNT as string);
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),  
-    databaseURL: "https://homerun-3e122-default-rtdb.asia-southeast1.firebasedatabase.app"
+    storageBucket : `${FirebaseValue.storage_bucket_name}.appspot.com`
 });
 
 const authService = new AuthService();
@@ -118,6 +120,32 @@ export const make_site_review_doc = functions.region("asia-northeast3").https.on
       noticeId,
       title,
       content
+    );
+
+    return new ApiResponse({
+      status : 200,
+      data : result
+    });
+  })
+);
+
+export const delete_site_review = functions.region("asia-northeast3").https.onRequest(
+  withAuthHandler(async (request : Request , response : Response , decodedIdToken : DecodedIdToken) : Promise<ApiResponse>=>{
+    const authHeader = request.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log("!authHeader || !authHeader.startsWith('Bearer ')");
+      throw UnauthorizedError.MissingTokenError();
+    }
+
+    const {path} = request.body;
+
+    if (!path) {
+      throw BadRequestError.InvalidParameterError("path");
+    }
+    const result = await siteReviewService.deleteReview(
+      decodedIdToken,
+      path
     );
 
     return new ApiResponse({
