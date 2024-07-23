@@ -156,5 +156,65 @@ export const delete_site_review = functions.region("asia-northeast3").https.onRe
   })
 );
 
+export const update_site_review = functions.region("asia-northeast3").https.onRequest(
+  withAuthHandler(async (request: Request, response: Response, decodedIdToken: DecodedIdToken): Promise<ApiResponse> => {
+    const authHeader = request.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log("!authHeader || !authHeader.startsWith('Bearer ')");
+      throw UnauthorizedError.MissingTokenError();
+    }
+
+    const { noticeId, reviewId, title, content, thumbnailImageName} = request.body;
+
+    if (!noticeId) {
+      throw BadRequestError.InvalidParameterError("noticeId");
+    }
+
+    if (!reviewId) {
+      throw BadRequestError.InvalidParameterError("reviewId");
+    }
+
+    const result = await siteReviewService.updateReview({
+      token: decodedIdToken,
+      noticeId : noticeId,
+      reviewId : reviewId,
+      title : title,
+      content : content,
+      thumbnailImageName : thumbnailImageName
+    });
+
+    return new ApiResponse({
+      status: 200,
+      data: result
+    });
+  })
+);
+
+
+export const increase_site_review_view = functions.region("asia-northeast3").https.onRequest(
+  withApiResponseHandler(async (request : Request , response : Response) : Promise<ApiResponse>=>{
+    const {noticeId , siteReviewId} = request.body;
+
+    if (!noticeId) {
+      throw BadRequestError.InvalidParameterError("noticeId");
+    }
+
+    if (!siteReviewId) {
+      throw BadRequestError.InvalidParameterError("siteReviewId");
+    }
+
+    const result = await siteReviewService.increaseReviewViewCount(
+      noticeId,
+      siteReviewId
+    );
+
+    return new ApiResponse({
+      status : 200,
+      data : result
+    });
+  })
+);
+
 
 
