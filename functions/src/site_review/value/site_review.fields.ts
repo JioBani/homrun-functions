@@ -3,5 +3,7 @@ export const SiteReviewFields = {
     content: 'content',
     noticeId: 'noticeId',
     writer : 'writer',
-    imagesRefPath : 'imagesRefPath'
+    imagesRefPath : 'imagesRefPath',
+    thumbnailRefPath : 'thumbnailRefPath',
+    view : "view",
 };
