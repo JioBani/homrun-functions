@@ -1,6 +1,6 @@
 import { DecodedIdToken } from "firebase-admin/auth";
 import * as firebaseAdmin from 'firebase-admin';
-import { ForbiddenError, UnauthorizedError } from '../error/http.error';
+import { ForbiddenError, NotFoundError, UnauthorizedError } from '../error/http.error';
 import { SiteReviewReferences } from "./site_review.references";
 import { DocumentReference } from "firebase-admin/firestore";
 import { SiteReviewFields } from "./value/site_review.fields";
@@ -57,11 +57,51 @@ export class SiteReviewService{
         return docRef.path;
     }
 
+    async updateReview(prams : {
+        token : DecodedIdToken,
+        noticeId : string,
+        reviewId : string,
+        title : string | undefined,
+        content : string | undefined,
+        thumbnailImageName : string | undefined,
+    }) : Promise<void>{
+        //TODO 이미 삭제된 문서인지 예외를 던지도록
+        
+        //#. 리뷰 문서 가져오기
+        const ref = SiteReviewReferences.getReviewDocument(prams.noticeId, prams.reviewId); 
+        const doc = await ref.get();
+
+        if(!doc.exists){
+            throw NotFoundError.DocumentNotFoundError();
+        }
+    
+        //#. 리뷰 소유권 확인
+        if(doc.data()?.[SiteReviewFields.writer] !== prams.token.uid){
+            throw ForbiddenError.UnauthorizedResourceError();
+        }        
+
+        //#. 리뷰 문서 수정하기
+        await ref.update({
+            [SiteReviewFields.title] : prams.title !== undefined ? prams.title : doc.data()?.[SiteReviewFields.title],
+            [SiteReviewFields.content] : prams.content !== undefined ? prams.content : doc.data()?.[SiteReviewFields.content],
+            [SiteReviewFields.thumbnailRefPath] : 
+                prams.thumbnailImageName !== undefined ? 
+                    SiteReviewReferences.getThumbnailImagePath(prams.noticeId , prams.reviewId, prams.thumbnailImageName)  :
+                    doc.data()?.[SiteReviewFields.thumbnailRefPath],
+        });
+    }
+
+
+
     async deleteReview(token : DecodedIdToken, path : string) : Promise<void>{
         //TODO 이미 삭제된 문서인지 예외를 던지도록
         
         //#. 리뷰 문서 가져오기
         const doc = await firebaseAdmin.firestore().doc(path).get();       
+
+        if(!doc.exists){
+            throw NotFoundError.DocumentNotFoundError();
+        }
     
         //#. 리뷰 소유권 확인
         if(doc.data()?.[SiteReviewFields.writer] !== token.uid){
@@ -83,5 +123,17 @@ export class SiteReviewService{
                 console.error("Error deleting images:", error);
             });
         }      
+    }
+
+    async increaseReviewViewCount(noticeId : string, siteReviewId : string) : Promise<void>{
+        //TODO 이미 삭제된 문서인지 예외를 던지도록
+        
+        //#. 리뷰 문서 가져오기
+        const doc = await SiteReviewReferences.getReviewDocument(noticeId , siteReviewId);
+
+        //#. 조회수 증가
+        doc.update({
+            [SiteReviewFields.view] : firebaseAdmin.firestore.FieldValue.increment(1)
+        });     
     }
 }
