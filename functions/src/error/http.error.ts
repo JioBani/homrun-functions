@@ -58,6 +58,10 @@ export class HttpError extends Error {
     constructor({ code = 40400, message = 'Not Found' }: { code?: number; message?: string } = {}) {
       super(404, code, message);
     }
+
+    static DocumentNotFoundError(): NotFoundError {
+      return new NotFoundError({ code: 40401, message: 'Document not found' });
+  }
   }
   
   export class InternalServerError extends HttpError {
