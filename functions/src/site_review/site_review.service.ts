@@ -90,6 +90,7 @@ export class SiteReviewService{
                 prams.thumbnailImageName !== undefined ? 
                     SiteReviewReferences.getThumbnailImagePath(prams.noticeId , prams.reviewId, prams.thumbnailImageName)  :
                     doc.data()?.[SiteReviewFields.thumbnailRefPath],
+            [SiteReviewFields.modified] : Timestamp.now()
         });
     }
 
