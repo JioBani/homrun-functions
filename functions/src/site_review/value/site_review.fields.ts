@@ -6,4 +6,6 @@ export const SiteReviewFields = {
     imagesRefPath : 'imagesRefPath',
     thumbnailRefPath : 'thumbnailRefPath',
     view : "view",
+    date : "date",
+    modified : "modified",
 };
