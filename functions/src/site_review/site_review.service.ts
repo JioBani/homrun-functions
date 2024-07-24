@@ -2,7 +2,7 @@ import { DecodedIdToken } from "firebase-admin/auth";
 import * as firebaseAdmin from 'firebase-admin';
 import { ForbiddenError, NotFoundError, UnauthorizedError } from '../error/http.error';
 import { SiteReviewReferences } from "./site_review.references";
-import { DocumentReference } from "firebase-admin/firestore";
+import { DocumentReference, Timestamp } from "firebase-admin/firestore";
 import { SiteReviewFields } from "./value/site_review.fields";
 
 export class SiteReviewService{
@@ -36,6 +36,8 @@ export class SiteReviewService{
             view: 0,
             imagesRefPath: "",
             thumbnailRefPath : "",
+            date : Timestamp.now(),
+            modified : null
         });
 
         //#2.3. 이미지 경로 업데이트 하기
