@@ -24,6 +24,7 @@ import { CommentService } from './comment/comment.service';
 import { SiteReviewService } from './site_review/site_review.service';
 import { DecodedIdToken } from 'firebase-admin/auth';
 import { FirebaseValue } from './value/firebase.value';
+import { NoticeService } from './notice/notice.service';
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ admin.initializeApp({
 const authService = new AuthService();
 const commentService = new CommentService();
 const siteReviewService = new SiteReviewService();
+const noticeService = new NoticeService();
 
 //소셜 로그인
 export const sign_in = functions.region("asia-northeast3").https.onRequest(
@@ -216,5 +218,58 @@ export const increase_site_review_view = functions.region("asia-northeast3").htt
   })
 );
 
+export const increase_notice_view_count = functions.region("asia-northeast3").https.onRequest(
+  withApiResponseHandler(async (request : Request , response : Response) : Promise<ApiResponse>=>{
+    const {noticeId} = request.body;
 
+    if (!noticeId) {
+      throw BadRequestError.InvalidParameterError("noticeId");
+    }
 
+    const result = await noticeService.increaseViewCount(noticeId);
+
+    return new ApiResponse({
+      status : 200,
+      data : result
+    });
+  })
+);
+
+export const like_notice = functions.region("asia-northeast3").https.onRequest(
+  withAuthHandler(async (request: Request, response: Response, decodedIdToken: DecodedIdToken): Promise<ApiResponse> => {
+    const { noticeId, like} = request.body;
+
+    if (!noticeId) {
+      throw BadRequestError.InvalidParameterError("noticeId");
+    }
+
+    if (!like && !(typeof like === "boolean")) {
+      throw BadRequestError.InvalidParameterError("like");
+    }
+
+    const result = await noticeService.like(decodedIdToken , noticeId , like);
+
+    return new ApiResponse({
+      status: 200,
+      data: result
+    });
+  })
+);
+
+export const make_notice_documents = functions
+  .region("asia-northeast3")
+  .pubsub.schedule("every day 00:00")
+  .timeZone("Asia/Seoul")
+  .onRun(async (_) => {
+  	noticeService.makeNoticeDocuments();
+});
+
+// export const make_notice_documents_force = functions.region("asia-northeast3").https.onRequest(
+//   withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
+//     await noticeService.makeNoticeDocuments();
+//     return new ApiResponse({
+//       status: 200,
+//       data: null
+//     });
+//   })
+// );
