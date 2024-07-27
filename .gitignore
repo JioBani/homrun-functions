@@ -67,3 +67,4 @@ node_modules/
 functions/lib/homerun-3e122-firebase-adminsdk-up403-843b4f161f.json
 functions/src/homerun-3e122-firebase-adminsdk-up403-843b4f161f.json
 functions/src/value/firebase.value.ts
+functions/src/sucure/apply_home_info_detail.service_key.ts
