@@ -3,116 +3,55 @@ import * as firebaseAdmin from 'firebase-admin';
 import axios, { AxiosResponse } from 'axios';
 import { SocialProvider } from '../enum/social-provider.enum';
 import { UserDto } from '../model/user.dto';
-import { Gender } from '../enum/gender.enum';
 import {KakaoUserResponse} from '../model/kakao/kakao-user-resonse'
 import { NaverProfileResponse } from '../model/naver/naver-profile-response';
 import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, InternalServerError } from '../error/http.error';
+import { UserService } from '../user/user.service';
 
 //TODO error 코드
 
 dotenv.config();
 
 export class AuthService {    
+
+  constructor(
+    private userService : UserService,
+  ){}
+    
    
+    //TODO 이미 회원가입 되어있는지 확인하고 displayName 바꾸지 않기
+    //TODO 소셜 프로바이더 회원가입이 맞게 적용
     async signIn(accessToken : string, provider : SocialProvider) : Promise<string | undefined>{
-        var user : UserDto;
+
+        var uid : string;
 
         if(provider === SocialProvider.KAKAO){
             var KakaoUserResponse : KakaoUserResponse = await this.getKakaoUserInfo(accessToken);
-            user = new UserDto({
-                socialProvider: SocialProvider.KAKAO,
-                uid: `kakao:${KakaoUserResponse.id}`,
-                displayName: this.#createDisplayName(),
-                birth: '2000-01-01',
-                gender: Gender.MALE,
-            });    
+            uid = `kakao:${KakaoUserResponse.id}`;
         }
         else if(provider === SocialProvider.NAVER){
             var naverProfileResponse : NaverProfileResponse = await this.getNaverUserInfo(accessToken);
-            user = new UserDto({
-                socialProvider: SocialProvider.KAKAO,
-                uid: `naver:${naverProfileResponse.response.id}`,
-                displayName: this.#createDisplayName(),
-                birth: '2000-01-01',
-                gender: Gender.MALE,
-            });   
+            uid =  `naver:${naverProfileResponse.response.id}`;
         }
         else{
             throw new BadRequestError({message : 'Incorrect social provider'})
         }
 
-        //#1. 유저 제작
-        var uid = await this.#createUser(user);  
-
+        //#. 유저 체크 및 없다면 회원가입
+        var userDto : UserDto = await this.userService.ensureUser(uid , provider);
+  
         //#2. 커스텀 토큰 생성
         let token;
         try{   
-            token = await firebaseAdmin.auth().createCustomToken(user.uid);
+            token = await firebaseAdmin.auth().createCustomToken(userDto.uid);
             console.log(`[AuthService.signIn()] : ${token}`);
         }catch(error){
             console.log(`[AuthService.signIn()] 커스텀 토큰 제작중 오류 발생 : ${error}`);
             throw new InternalServerError({message : 'An unexpected error occurred during create custom token.'});
         }   
 
-        console.log(`[AuthService.signIn()] 로그인 완료 : ${user.socialProvider} , ${uid} , ${user.displayName} , ${token}}`)
+        console.log(`[AuthService.signIn()] 로그인 완료 : ${userDto.socialProvider} , ${userDto.uid} , ${userDto.displayName} , ${token}}`)
         return token;
-    }
-
-    async #createUser(userDto : UserDto) : Promise<string>{
-
-        let userInfo = {
-            uid: userDto.uid,
-            socialProvider : userDto.socialProvider,
-            displayName: userDto.displayName,
-            userType: 'commom',
-            birth: userDto.birth,
-            gender: userDto.gender,
-        }
-    
-        try{
-            try {
-                await firebaseAdmin.auth().updateUser(userDto.uid, userInfo);
-                console.log(`[AuthService.createUser()] ${userInfo.socialProvider} 유저 업데이트 : ${userInfo.uid} , ${userInfo.displayName}`)
-            } catch (e) {
-                await firebaseAdmin.auth().createUser(userInfo);
-                console.log(`[AuthService.createUser()] ${userInfo.socialProvider} 유저 회원가입 : ${userInfo.uid} , ${userInfo.displayName}`)
-            }
-        }catch(e){
-            console.log(`유저 업데이트 및 회원가입중 오류 : ${e}`);
-            throw new InternalServerError({message : 'Error updating or creating user.'});
-        }
-       
-        try{
-            const userDocRef = firebaseAdmin.firestore().collection('users').doc(userDto.uid);
-            await userDocRef.set(userInfo, { merge: true });  
-
-        }catch(e){
-            console.log(`유저 정보 저장중 오류 : ${e}`);
-            throw new InternalServerError({message : 'Error setting user document.'});
-        }
-    
-        return userDto.uid;
-    }
-
-    #createDisplayName() : string {
-        const adjectives = [
-            "춤추는", "용감한", "조용한", "신비한", "반짝이는",
-            "사나운", "온화한", "빛나는", "속삭이는", "기쁜",
-            "환한", "그림자", "황금빛", "마법의", "방랑하는",
-            "활기찬", "얼어붙은", "장난기 많은", "평온한", "웅장한"
-        ];
-    
-        const nouns = [
-            "딸기", "사자", "강", "유령", "은하",
-            "불사조", "나비", "산", "고래", "유니콘",
-            "용", "숲", "별", "신비", "오아시스",
-            "호랑이", "오로라", "스핑크스", "파도", "성"
-        ];
-    
-        const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-        const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-    
-        return `${randomAdjective} ${randomNoun}`;
     }
 
     async getKakaoUserInfo(accessToken : string) : Promise<KakaoUserResponse>{
