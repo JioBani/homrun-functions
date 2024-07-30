@@ -45,40 +45,61 @@ export class UserService{
     }
 
     //#. 유저 제작
-    async createUser(userDto : UserDto) : Promise<UserDto>{
+    async createUser(uid : string,  socialProvider : SocialProvider) : Promise<UserDto>{
       //TODO 회원가입시 uid 암호화 필요함
-      let userInfo = {
-          uid: userDto.uid,
-          socialProvider : userDto.socialProvider,
-          displayName: userDto.displayName,
-          userType: 'commom',
-          birth: userDto.birth,
-          gender: userDto.gender,
-      }
-  
+
+      var userDto = new UserDto({
+        uid: uid,
+        socialProvider : socialProvider,
+        displayName: this.#createDisplayName(),
+        birth: "2000-01-01",
+        gender: Gender.MALE,
+      });      
+        
       try{
-          try {
-              await firebaseAdmin.auth().updateUser(userDto.uid, userInfo);
-              console.log(`[AuthService.createUser()] ${userInfo.socialProvider} 유저 업데이트 : ${userInfo.uid} , ${userInfo.displayName}`)
-          } catch (e) {
-              await firebaseAdmin.auth().createUser(userInfo);
-              console.log(`[AuthService.createUser()] ${userInfo.socialProvider} 유저 회원가입 : ${userInfo.uid} , ${userInfo.displayName}`)
-          }
+        await firebaseAdmin.auth().createUser({
+            uid : uid,
+            displayName : userDto.displayName
+        });
+        console.log(`[AuthService.createUser()] ${userDto.socialProvider} 유저 회원가입 : ${userDto.uid} , ${userDto.displayName}`)
       }catch(e){
           console.log(`유저 업데이트 및 회원가입중 오류 : ${e}`);
           throw new InternalServerError({message : 'Error updating or creating user.'});
       }
      
       try{
-          const userDocRef = firebaseAdmin.firestore().collection('users').doc(userDto.uid);
-          await userDocRef.set(userInfo, { merge: true });  
+          const userDocRef = UserReferences.getUserDocument(uid);
+          await userDocRef.set(userDto, { merge: true });  
 
       }catch(e){
           console.log(`유저 정보 저장중 오류 : ${e}`);
+          await firebaseAdmin.auth().deleteUser(uid);
           throw new InternalServerError({message : 'Error setting user document.'});
       }
   
       return userDto;
   }
+
+  #createDisplayName() : string {
+    const adjectives = [
+        "춤추는", "용감한", "조용한", "신비한", "반짝이는",
+        "사나운", "온화한", "빛나는", "속삭이는", "기쁜",
+        "환한", "그림자", "황금빛", "마법의", "방랑하는",
+        "활기찬", "얼어붙은", "장난기 많은", "평온한", "웅장한"
+    ];
+
+    const nouns = [
+        "딸기", "사자", "강", "유령", "은하",
+        "불사조", "나비", "산", "고래", "유니콘",
+        "용", "숲", "별", "신비", "오아시스",
+        "호랑이", "오로라", "스핑크스", "파도", "성"
+    ];
+
+    const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+
+    return `${randomAdjective} ${randomNoun}`;
+}
+
 }
 
