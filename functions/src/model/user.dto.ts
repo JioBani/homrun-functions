@@ -27,4 +27,14 @@ export class UserDto{
         this.birth = birth;
         this.gender = gender;
       }
+
+    toPlainObject() {
+      return {
+          socialProvider: this.socialProvider,
+          uid: this.uid,
+          displayName: this.displayName,
+          birth: this.birth,
+          gender: this.gender,
+      };
+    }
 }
