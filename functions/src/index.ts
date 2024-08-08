@@ -25,6 +25,8 @@ import { SiteReviewService } from './site_review/site_review.service';
 import { DecodedIdToken } from 'firebase-admin/auth';
 import { FirebaseValue } from './value/firebase.value';
 import { NoticeService } from './notice/notice.service';
+import { UserService } from './user/user.service';
+import { Gender } from './enum/gender.enum';
 
 dotenv.config();
 
@@ -35,7 +37,7 @@ admin.initializeApp({
     storageBucket : `${FirebaseValue.storage_bucket_name}.appspot.com`
 });
 
-const authService = new AuthService();
+const authService = new AuthService(new UserService);
 const commentService = new CommentService();
 const siteReviewService = new SiteReviewService();
 const noticeService = new NoticeService();
@@ -56,6 +58,50 @@ export const sign_in = functions.region("asia-northeast3").https.onRequest(
     }
 
     const result = await authService.signIn(authHeader.split(' ')[1] , social_provider);
+
+    return new ApiResponse({
+      status : 200,
+      data : result
+    });
+  })
+);
+
+
+//#. 소셜 회원가입
+export const sign_up = functions.region("asia-northeast3").https.onRequest(
+  withApiResponseHandler(async (request : Request , response : Response) : Promise<ApiResponse>=>{
+    const authHeader = request.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedError();
+    }
+
+    const { social_provider, displayName, gender, birth} = request.body;
+
+    if (!Object.values(SocialProvider).includes(social_provider)) {
+      throw new BadRequestError({message : 'Invalid social provider'});
+    }
+
+   
+    if (!displayName) {
+      throw BadRequestError.InvalidParameterError("displayName");
+    }
+
+    if (!gender || !Object.values(Gender).includes(gender)) {
+      throw BadRequestError.InvalidParameterError("gender");
+    }
+
+     if (!birth) {
+      throw BadRequestError.InvalidParameterError("birth");
+    }
+
+    const result = await authService.signUp({
+      accessToken : authHeader.split(' ')[1], 
+      socialProvider : social_provider,
+      displayName : displayName,
+      gender : gender,
+      birth : birth
+    });
 
     return new ApiResponse({
       status : 200,
