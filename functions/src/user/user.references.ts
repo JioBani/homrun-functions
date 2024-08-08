@@ -9,4 +9,8 @@ export class UserReferences{
     static getUserDocument(uid : string) : DocumentReference{
         return firebaseAdmin.firestore().collection('users').doc(uid);
     }
+
+    static getUserNoticeScrapCollection(uid : string) : CollectionReference{
+        return firebaseAdmin.firestore().collection('users').doc(uid).collection('scrap').doc('notice').collection('content');
+    }
 }
