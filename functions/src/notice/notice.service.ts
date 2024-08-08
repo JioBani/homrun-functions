@@ -197,5 +197,16 @@ export class NoticeService{
           // 유효하지 않은 경우 Timestamp 0 반환
           return Timestamp.fromDate(new Date(0));
         }
-      }
+    }
+
+    //#. 공고 스크랩 수 증가
+    async updateNoticeScrapCount(noticeId : string,up : boolean){  
+        //#. 공고 문서 가져오기
+        const doc = await NoticeReferences.getNoticeDocument(noticeId);
+
+        //#. 스크랩 수 증가
+        await doc.update({
+            [NoticeDtoFields.scraps] : FieldValue.increment(up ? 1 : -1)
+        });   
+    }
 }
