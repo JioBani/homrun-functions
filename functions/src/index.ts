@@ -310,6 +310,27 @@ export const make_notice_documents = functions
   	noticeService.makeNoticeDocuments();
 });
 
+export const update_notice_scrap_count = functions.region("asia-northeast3").https.onRequest(
+  withAuthHandler(async (request: Request, response: Response, decodedIdToken: DecodedIdToken): Promise<ApiResponse> => {
+    const { noticeId, up} = request.body;
+
+    if (!noticeId) {
+      throw BadRequestError.InvalidParameterError("noticeId");
+    }
+
+    if (!up && !(typeof up === "boolean")) {
+      throw BadRequestError.InvalidParameterError("up");
+    }
+
+    const result = await noticeService.updateNoticeScrapCount(noticeId, up);
+
+    return new ApiResponse({
+      status: 200,
+      data: result
+    });
+  })
+);
+
 // export const make_notice_documents_force = functions.region("asia-northeast3").https.onRequest(
 //   withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
 //     await noticeService.makeNoticeDocuments();
