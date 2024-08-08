@@ -42,6 +42,9 @@ export class HttpError extends Error {
       return new UnauthorizedError({code : 40102 , message : 'Authorization token is invalid'});
     } 
 
+    static UserNotFoundError(): UnauthorizedError {
+      return new UnauthorizedError({ code: 40104, message: 'User not found' });
+    }
   }
   
   export class ForbiddenError extends HttpError {
@@ -52,6 +55,8 @@ export class HttpError extends Error {
     static UnauthorizedResourceError(): ForbiddenError {
       return new ForbiddenError({ code: 40301, message: `Unauthorized access to resource` });
     }
+
+    
   }
   
   export class NotFoundError extends HttpError {
@@ -67,6 +72,16 @@ export class HttpError extends Error {
   export class InternalServerError extends HttpError {
     constructor({ code = 50000, message = 'Internal Server Error' }: { code?: number; message?: string } = {}) {
       super(500, code, message);
+    }
+  }
+
+  export class ConflictError extends HttpError {
+    constructor({ code = 40900, message = 'Conflict' }: { code?: number; message?: string } = {}) {
+      super(409, code, message);
+    }
+  
+    static UserAlreadyExistsError(): ConflictError {
+      return new ConflictError({ code: 40901, message: 'User already exists' });
     }
   }
   
