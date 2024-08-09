@@ -14,4 +14,13 @@ export class NoticeReferences{
     static getNoticeCollection() : CollectionReference{
         return firebaseAdmin.firestore().collection('notice');
     }
+
+    static getNoticeScrapCollection(noticeId : string , uid : string) : CollectionReference{
+        return  firebaseAdmin.firestore()
+            .collection('notice')
+            .doc(noticeId)
+            .collection('scrap')
+            .doc('notice')
+            .collection('content');
+    }
 }
