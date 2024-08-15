@@ -209,22 +209,4 @@ export class NoticeService{
             [NoticeDtoFields.scraps] : FieldValue.increment(up ? 1 : -1)
         });   
     }
-
-    //#. 공고 스크랩 모두 삭제
-    async deleteAllNoticeScarp(token: DecodedIdToken, noticeId: string) {  
-        //#. 스크랩 컬렉션 가져오기
-        const collection = NoticeReferences.getNoticeScrapCollection(noticeId, token.uid);
-        const snapshots = await collection.get();
-    
-        //#. batch로 모든 스크랩 삭제하기
-        const batch = collection.firestore.batch();
-    
-        snapshots.docs.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-    
-        //#. batch 커밋
-        await batch.commit();
-    }    
-
 }
