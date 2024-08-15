@@ -7,7 +7,6 @@ import { NaverProfileResponse } from '../model/naver/naver-profile-response';
 import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, InternalServerError } from '../error/http.error';
 import { UserService } from '../user/user.service';
 import { Gender } from '../enum/gender.enum';
-import { Timestamp } from 'firebase-admin/firestore';
 
 //TODO error 코드
 
@@ -139,7 +138,8 @@ export class AuthService {
       socialProvider : SocialProvider,
       displayName : string,
       gender : Gender,
-      birth : Timestamp
+      ageRange : String,
+      interestedRegions : String[]
     }) : Promise<string | undefined>{
 
       //#1. 토큰 검증 및 uid 만들기
@@ -151,7 +151,8 @@ export class AuthService {
         socialProvider : data.socialProvider,
         displayName : data.displayName,
         gender : data.gender,
-        birth : data.birth
+        ageRange : data.ageRange,
+        interestedRegions : data.interestedRegions,
       });
 
       //#3. 커스텀 토큰 생성
