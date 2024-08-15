@@ -5,27 +5,32 @@ export class UserDto{
     socialProvider! : SocialProvider;
     uid! : string;
     displayName : string | undefined;
-    birth : string | undefined;
     gender! : Gender
+    ageRange : String;
+    interestedRegions : String[];
 
     constructor({
         socialProvider,
         uid,
         displayName,
-        birth,
         gender,
+        ageRange,
+        interestedRegions
       }: {
         socialProvider: SocialProvider;
         uid: string;
         displayName?: string;
         birth?: string;
         gender: Gender;
+        ageRange : String;
+        interestedRegions : String[];
       }) {
         this.socialProvider = socialProvider;
         this.uid = uid;
         this.displayName = displayName;
-        this.birth = birth;
         this.gender = gender;
+        this.ageRange = ageRange;
+        this.interestedRegions = interestedRegions;
       }
 
     toPlainObject() {
@@ -33,8 +38,9 @@ export class UserDto{
           socialProvider: this.socialProvider,
           uid: this.uid,
           displayName: this.displayName,
-          birth: this.birth,
           gender: this.gender,
+          ageRange: this.ageRange,
+          interestedRegions: this.interestedRegions,
       };
     }
 }
