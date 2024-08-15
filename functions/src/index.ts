@@ -27,6 +27,9 @@ import { FirebaseValue } from './value/firebase.value';
 import { NoticeService } from './notice/notice.service';
 import { UserService } from './user/user.service';
 import { Gender } from './enum/gender.enum';
+import { ScrapService } from './scrap/scrap.service';
+import { validateRegions } from './value/region.value';
+import { validateAgeRange } from './value/age_range.value';
 
 dotenv.config();
 
@@ -41,6 +44,7 @@ const authService = new AuthService(new UserService);
 const commentService = new CommentService();
 const siteReviewService = new SiteReviewService();
 const noticeService = new NoticeService();
+const scrapService = new ScrapService();
 
 //소셜 로그인
 export const sign_in = functions.region("asia-northeast3").https.onRequest(
@@ -76,9 +80,10 @@ export const sign_up = functions.region("asia-northeast3").https.onRequest(
       throw new UnauthorizedError();
     }
 
-    const { social_provider, displayName, gender, birth} = request.body;
+    const { social_provider, displayName, gender, ageRange,interestedRegions} = request.body;
 
     if (!Object.values(SocialProvider).includes(social_provider)) {
+      console.log(social_provider);
       throw new BadRequestError({message : 'Invalid social provider'});
     }
 
@@ -91,8 +96,13 @@ export const sign_up = functions.region("asia-northeast3").https.onRequest(
       throw BadRequestError.InvalidParameterError("gender");
     }
 
-     if (!birth) {
-      throw BadRequestError.InvalidParameterError("birth");
+    if (!ageRange || !validateAgeRange(ageRange)) {
+      throw BadRequestError.InvalidParameterError("ageRange");
+    }
+
+    if(!interestedRegions || !validateRegions(interestedRegions))
+    {
+      throw BadRequestError.InvalidParameterError("interestedRegions");
     }
 
     const result = await authService.signUp({
@@ -100,7 +110,8 @@ export const sign_up = functions.region("asia-northeast3").https.onRequest(
       socialProvider : social_provider,
       displayName : displayName,
       gender : gender,
-      birth : birth
+      ageRange : ageRange,
+      interestedRegions : interestedRegions,
     });
 
     return new ApiResponse({
@@ -323,6 +334,17 @@ export const update_notice_scrap_count = functions.region("asia-northeast3").htt
     }
 
     const result = await noticeService.updateNoticeScrapCount(noticeId, up);
+
+    return new ApiResponse({
+      status: 200,
+      data: result
+    });
+  })
+);
+
+export const delete_all_notice_scrap = functions.region("asia-northeast3").https.onRequest(
+  withAuthHandler(async (request: Request, response: Response, decodedIdToken: DecodedIdToken): Promise<ApiResponse> => {
+    const result = await scrapService.deleteAllNoticeScarp(decodedIdToken);
 
     return new ApiResponse({
       status: 200,
