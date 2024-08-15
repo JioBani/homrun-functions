@@ -5,7 +5,6 @@ import { UserDto } from "../model/user.dto";
 import { Gender } from "../enum/gender.enum";
 import { ConflictError, InternalServerError } from '../error/http.error';
 import { logger } from 'firebase-functions/v1';
-import { Timestamp } from 'firebase-admin/firestore';
 
 export class UserService{
   
@@ -45,6 +44,8 @@ export class UserService{
             displayName: data.displayName,
             birth: data.birth,
             gender: data.gender as Gender,
+            ageRange: data.ageRange,
+            interestedRegions: data.interestedRegions
           });
         } else {
             return undefined;
@@ -60,7 +61,8 @@ export class UserService{
         socialProvider : SocialProvider,
         displayName : string,
         gender : Gender,
-        birth : Timestamp
+        ageRange : String,
+        interestedRegions : String[]
       }) : Promise<UserDto>{
 
         //#1. uid가 있는지 확인하고 만들기        
@@ -77,7 +79,8 @@ export class UserService{
                 socialProvider : data.socialProvider,
                 displayName : data.displayName,
                 gender : data.gender,
-                birth : Timestamp.now()
+                ageRange : data.ageRange,
+                interestedRegions : data.interestedRegions
             });
 
             console.log(`[UserService.ensureUser()] ${userDto.socialProvider} 유저 회원가입 : ${userDto.uid} , ${userDto.displayName}`);
@@ -112,14 +115,17 @@ export class UserService{
         socialProvider : SocialProvider,
         displayName : string,
         gender : Gender,
-        birth : Timestamp
+        ageRange : String,
+        interestedRegions : String[]
       }) : Promise<UserDto>{
+
         var userDto = new UserDto({
             uid: data.uid,
             socialProvider : data.socialProvider,
             displayName: data.displayName,
-            birth: "2000-01-01",
             gender: data.gender,
+            ageRange : data.ageRange,
+            interestedRegions :data.interestedRegions
         }); 
 
         await  UserReferences.getUserDocument(data.uid).set(userDto.toPlainObject(), { merge: true });  
