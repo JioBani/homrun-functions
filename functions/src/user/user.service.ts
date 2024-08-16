@@ -73,18 +73,25 @@ export class UserService{
         await this.#createUid(data.uid);        
 
         //#2. user document 만들기        
-        const userDto = await this.#createUserDocument({
-            uid : data.uid, 
-            socialProvider : data.socialProvider,
-            displayName : data.displayName,
-            gender : data.gender,
-            ageRange : data.ageRange,
-            interestedRegions : data.interestedRegions
-        });
+        try{
+            const userDto = await this.#createUserDocument({
+                uid : data.uid, 
+                socialProvider : data.socialProvider,
+                displayName : data.displayName,
+                gender : data.gender,
+                ageRange : data.ageRange,
+                interestedRegions : data.interestedRegions
+            });    
 
-        console.log(`[UserService.ensureUser()] ${userDto.socialProvider} 유저 회원가입 : ${userDto.uid} , ${userDto.displayName}`);
+            console.log(`[UserService.ensureUser()] ${userDto.socialProvider} 유저 회원가입 : ${userDto.uid} , ${userDto.displayName}`);
 
-        return userDto;       
+            return userDto; 
+        }catch(e){
+            //#. 문서 제작 실패시 유저 삭제
+            firebaseAdmin.auth().deleteUser(data.uid);
+            throw e;
+        }   
+           
     }
 
     //#. 유저 만들기
@@ -96,10 +103,10 @@ export class UserService{
             console.log(`[UserService.createUser()] uid 생성 : ${uid}`)
         }catch(e){
             try{
-            await firebaseAdmin.auth().updateUser(uid , {});
+                await firebaseAdmin.auth().updateUser(uid , {});
             }catch(e){
-            console.log(`[UserService.createUser()] 유저 회원가입중 오류 : ${e}`);
-            throw new InternalServerError({message : 'Error updating or creating user.'});
+                console.log(`[UserService.createUser()] 유저 회원가입중 오류 : ${e}`);
+                throw new InternalServerError({message : 'Error updating or creating user.'});
             }       
         }
     }
@@ -123,6 +130,7 @@ export class UserService{
                 throw ConflictError.DisplayNameAlreadyExistsError();
             }
 
+            console.log("[UserService.createUserDocument] 유저 만들기 시작")
             //#. 유저 만들기
             const userDto = new UserDto({
                 uid: data.uid,
