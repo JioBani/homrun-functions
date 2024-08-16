@@ -83,5 +83,9 @@ export class HttpError extends Error {
     static UserAlreadyExistsError(): ConflictError {
       return new ConflictError({ code: 40901, message: 'User already exists' });
     }
+
+    static DisplayNameAlreadyExistsError(): ConflictError {
+      return new ConflictError({ code: 40902, message: 'Display name already exists' });
+    }
   }
   
