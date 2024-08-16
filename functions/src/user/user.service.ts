@@ -3,8 +3,8 @@ import { SocialProvider } from "../enum/social-provider.enum";
 import { UserReferences } from "./user.references";
 import { UserDto } from "../model/user.dto";
 import { Gender } from "../enum/gender.enum";
-import { ConflictError, InternalServerError } from '../error/http.error';
-import { logger } from 'firebase-functions/v1';
+import { ConflictError, InternalServerError,} from '../error/http.error';
+import { Transaction } from 'firebase-admin/firestore';
 
 export class UserService{
   
@@ -73,23 +73,18 @@ export class UserService{
         await this.#createUid(data.uid);        
 
         //#2. user document 만들기        
-        try{
-            const userDto = await this.#createUserDocument({
-                uid : data.uid, 
-                socialProvider : data.socialProvider,
-                displayName : data.displayName,
-                gender : data.gender,
-                ageRange : data.ageRange,
-                interestedRegions : data.interestedRegions
-            });
+        const userDto = await this.#createUserDocument({
+            uid : data.uid, 
+            socialProvider : data.socialProvider,
+            displayName : data.displayName,
+            gender : data.gender,
+            ageRange : data.ageRange,
+            interestedRegions : data.interestedRegions
+        });
 
-            console.log(`[UserService.ensureUser()] ${userDto.socialProvider} 유저 회원가입 : ${userDto.uid} , ${userDto.displayName}`);
-            return userDto;
-        }catch(e){
-            logger.error(`[UserService.ensureUser()] 유저 정보 문서 생성중 오류 : ${e}`);
-            await firebaseAdmin.auth().deleteUser(data.uid);
-            throw new InternalServerError({message : 'Error setting user document.'});
-        }         
+        console.log(`[UserService.ensureUser()] ${userDto.socialProvider} 유저 회원가입 : ${userDto.uid} , ${userDto.displayName}`);
+
+        return userDto;       
     }
 
     //#. 유저 만들기
@@ -119,18 +114,41 @@ export class UserService{
         interestedRegions : String[]
       }) : Promise<UserDto>{
 
-        var userDto = new UserDto({
-            uid: data.uid,
-            socialProvider : data.socialProvider,
-            displayName: data.displayName,
-            gender: data.gender,
-            ageRange : data.ageRange,
-            interestedRegions :data.interestedRegions
-        }); 
+        //#. 회원가입이 동시에 진행 될 수도 있기 때문에 트랜잭션 사용
+        return firebaseAdmin.firestore().runTransaction(async (transaction) => {
+            //#. 닉네임 중복 체크
+            const isDuplicated = await this.#isDisplayNameDuplicated(transaction , data.displayName);
 
-        await  UserReferences.getUserDocument(data.uid).set(userDto.toPlainObject(), { merge: true });  
-        
-        return userDto;
+            if(isDuplicated){
+                throw ConflictError.DisplayNameAlreadyExistsError();
+            }
+
+            //#. 유저 만들기
+            const userDto = new UserDto({
+                uid: data.uid,
+                socialProvider : data.socialProvider,
+                displayName: data.displayName,
+                gender: data.gender,
+                ageRange : data.ageRange,
+                interestedRegions :data.interestedRegions
+            }); 
+
+            await transaction.set(UserReferences.getUserDocument(data.uid),userDto.toPlainObject());
+
+            return userDto;
+        });
+    }
+
+    //#. 닉네임 중복 검사
+    async #isDisplayNameDuplicated(transaction : Transaction , newName : String) : Promise<boolean>{
+        const snapshot = await transaction.get(UserReferences.getUserCollection().where('displayName' , '==' ,newName));
+
+        if(snapshot.empty){
+            return false;
+        }
+        else{
+            return true;
+        }
     }
 }
 
