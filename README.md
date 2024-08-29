@@ -6,8 +6,6 @@
 
 <img src="README.assets/Group 481.png" />
 
-![Group 481](README.assets/Group 481.png)
-
 ## 🛠 Skills
 
 - Flutter, Dart
