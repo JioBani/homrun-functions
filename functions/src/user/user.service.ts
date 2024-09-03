@@ -4,7 +4,7 @@ import { UserReferences } from "./user.references";
 import { UserDto } from "../model/user.dto";
 import { Gender } from "../enum/gender.enum";
 import { ConflictError, InternalServerError,} from '../error/http.error';
-import { Transaction } from 'firebase-admin/firestore';
+import { Timestamp, Transaction } from 'firebase-admin/firestore';
 
 export class UserService{
   
@@ -44,7 +44,6 @@ export class UserService{
             displayName: data.displayName,
             birth: data.birth,
             gender: data.gender as Gender,
-            ageRange: data.ageRange,
             interestedRegions: data.interestedRegions
           });
         } else {
@@ -61,7 +60,7 @@ export class UserService{
         socialProvider : SocialProvider,
         displayName : string,
         gender : Gender,
-        ageRange : String,
+        birth : Timestamp,
         interestedRegions : String[]
       }) : Promise<UserDto>{
 
@@ -79,7 +78,7 @@ export class UserService{
                 socialProvider : data.socialProvider,
                 displayName : data.displayName,
                 gender : data.gender,
-                ageRange : data.ageRange,
+                birth : data.birth,
                 interestedRegions : data.interestedRegions
             });    
 
@@ -117,7 +116,7 @@ export class UserService{
         socialProvider : SocialProvider,
         displayName : string,
         gender : Gender,
-        ageRange : String,
+        birth : Timestamp,
         interestedRegions : String[]
       }) : Promise<UserDto>{
 
@@ -136,8 +135,8 @@ export class UserService{
                 uid: data.uid,
                 socialProvider : data.socialProvider,
                 displayName: data.displayName,
+                birth : data.birth,
                 gender: data.gender,
-                ageRange : data.ageRange,
                 interestedRegions :data.interestedRegions
             }); 
 
