@@ -29,7 +29,7 @@ import { UserService } from './user/user.service';
 import { Gender } from './enum/gender.enum';
 import { ScrapService } from './scrap/scrap.service';
 import { validateRegions } from './value/region.value';
-import { validateAgeRange } from './value/age_range.value';
+import { TimeFormatter } from './common/time_formatter';
 
 dotenv.config();
 
@@ -80,10 +80,10 @@ export const sign_up = functions.region("asia-northeast3").https.onRequest(
       throw new UnauthorizedError();
     }
 
-    const { social_provider, displayName, gender, ageRange,interestedRegions} = request.body;
+    const { socialProvider, displayName, gender, birth,interestedRegions} = request.body;
 
-    if (!Object.values(SocialProvider).includes(social_provider)) {
-      console.log(social_provider);
+    if (!Object.values(SocialProvider).includes(socialProvider)) {
+      console.log(socialProvider);
       throw new BadRequestError({message : 'Invalid social provider'});
     }
 
@@ -96,8 +96,18 @@ export const sign_up = functions.region("asia-northeast3").https.onRequest(
       throw BadRequestError.InvalidParameterError("gender");
     }
 
-    if (!ageRange || !validateAgeRange(ageRange)) {
-      throw BadRequestError.InvalidParameterError("ageRange");
+    if (!birth) {
+      throw BadRequestError.InvalidParameterError("birth");
+    }
+
+    //#. brith는 string을 TimeStamp형식으로 변환해서 전달
+    //TODO 시간 범위 체크를 해야할지 결정하기(14세 이상, 1800년대, 미래 등)
+    let birthDate;
+
+    try{
+      birthDate = TimeFormatter.datStringToDateTime(birth);
+    }catch(e){
+      throw BadRequestError.InvalidParameterError("birth");
     }
 
     if(!interestedRegions || !validateRegions(interestedRegions))
@@ -107,11 +117,11 @@ export const sign_up = functions.region("asia-northeast3").https.onRequest(
 
     const result = await authService.signUp({
       accessToken : authHeader.split(' ')[1], 
-      socialProvider : social_provider,
+      socialProvider : socialProvider,
       displayName : displayName,
       gender : gender,
-      ageRange : ageRange,
       interestedRegions : interestedRegions,
+      birth : birthDate
     });
 
     return new ApiResponse({
