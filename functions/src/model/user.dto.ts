@@ -1,35 +1,35 @@
 import { Gender } from "@/enum/gender.enum";
 import { SocialProvider } from "@/enum/social-provider.enum";
+import { Timestamp } from "firebase-admin/firestore";
 
 export class UserDto{
     socialProvider! : SocialProvider;
     uid! : string;
     displayName : string | undefined;
     gender! : Gender
-    ageRange : String;
+    birth : Timestamp;
     interestedRegions : String[];
 
     constructor({
         socialProvider,
         uid,
         displayName,
+        birth,
         gender,
-        ageRange,
         interestedRegions
       }: {
         socialProvider: SocialProvider;
         uid: string;
         displayName?: string;
-        birth?: string;
+        birth: Timestamp;
         gender: Gender;
-        ageRange : String;
         interestedRegions : String[];
       }) {
         this.socialProvider = socialProvider;
         this.uid = uid;
         this.displayName = displayName;
         this.gender = gender;
-        this.ageRange = ageRange;
+        this.birth = birth;
         this.interestedRegions = interestedRegions;
       }
 
@@ -39,7 +39,7 @@ export class UserDto{
           uid: this.uid,
           displayName: this.displayName,
           gender: this.gender,
-          ageRange: this.ageRange,
+          birth : this.birth,
           interestedRegions: this.interestedRegions,
       };
     }
