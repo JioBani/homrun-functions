@@ -194,10 +194,10 @@ export class UserService{
         const result: { [key: string]: any } = {};
 
         // 각 필드가 undefined 또는 null이 아닌 경우에만 result 객체에 추가
-        if (data.displayName !== undefined && data.displayName !== null) result.displayName = data.displayName;
-        if (data.gender !== undefined && data.gender !== null) result.gender = data.gender;
-        if (data.birth !== undefined && data.birth !== null) result.birth = data.birth;
-        if (data.interestedRegions !== undefined && data.interestedRegions !== null) result.interestedRegions = data.interestedRegions;
+        if (data.displayName != null) result.displayName = data.displayName;
+        if (data.gender != null) result.gender = data.gender;
+        if (data.birth != null) result.birth = data.birth;
+        if (data.interestedRegions != null) result.interestedRegions = data.interestedRegions;
   
         return result;
     }
