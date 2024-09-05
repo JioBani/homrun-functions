@@ -3,7 +3,7 @@ import { SocialProvider } from "../enum/social-provider.enum";
 import { UserReferences } from "./user.references";
 import { UserDto } from "../model/user.dto";
 import { Gender } from "../enum/gender.enum";
-import { ConflictError, InternalServerError,} from '../error/http.error';
+import { BadRequestError, ConflictError, InternalServerError} from '../error/http.error';
 import { Timestamp, Transaction } from 'firebase-admin/firestore';
 
 export class UserService{
@@ -55,6 +55,7 @@ export class UserService{
       }
     }
 
+    //#. 유저 만들기
     async createUser(data : {
         uid : string, 
         socialProvider : SocialProvider,
@@ -93,7 +94,7 @@ export class UserService{
            
     }
 
-    //#. 유저 만들기
+    //#. Firebase에 유저 만들기
     async #createUid(uid : string){
         try{
             await firebaseAdmin.auth().createUser({
@@ -156,6 +157,48 @@ export class UserService{
         else{
             return true;
         }
+    }
+
+    //#. 회원정보 업데이트
+    //유효성 검사는 index에서 해결한 상태
+    async updateUserInfo(data : {
+        uid : string,
+        displayName : string | undefined,
+        gender : Gender | undefined,
+        interestedRegions : [] | undefined,
+        birth : Timestamp | undefined
+    }){       
+
+        const userinfoUpdateDto = this.#makeUserInfoUpdateObject({
+            displayName : data.displayName,
+            gender : data.gender,
+            birth : data.birth,
+            interestedRegions : data.interestedRegions,
+        });
+        
+        if (Object.keys(userinfoUpdateDto).length > 0){
+            await UserReferences.getUserDocument(data.uid).update(userinfoUpdateDto);
+        }
+        else{
+            throw new BadRequestError({message :  "No fields to update."});
+        }
+    }
+
+    #makeUserInfoUpdateObject(data : {
+        displayName : string | undefined,
+        gender : Gender | undefined,
+        interestedRegions : [] | undefined,
+        birth : Timestamp | undefined
+    }){
+        const result: { [key: string]: any } = {};
+
+        // 각 필드가 undefined가 아닌 경우에만 result 객체에 추가
+        if (data.displayName !== undefined) result.displayName = data.displayName;
+        if (data.gender !== undefined) result.gender = data.gender;
+        if (data.birth !== undefined) result.birth = data.birth;
+        if (data.interestedRegions !== undefined) result.interestedRegions = data.interestedRegions;
+  
+        return result;
     }
 }
 
