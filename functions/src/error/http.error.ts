@@ -1,3 +1,5 @@
+//TODO 파생 에러들을 클래스로 변경
+
 export class HttpError extends Error {
     status: number;
     code: number;
@@ -23,10 +25,16 @@ export class HttpError extends Error {
     constructor({ code = 40000, message = 'Bad Request' }: { code?: number; message?: string } = {}) {
       super(400, code, message);
     }
+  }
 
-    static InvalidParameterError(name : string) : BadRequestError{
-      return new BadRequestError({code : 40001 , message : `Parameter ${name} is invalid`});
-    } 
+  export class InvalidParameterError extends BadRequestError {
+    constructor(message: string) {
+      super({ code: 40001, message: message });
+    }
+  
+    static fromParameter(parameter: string): InvalidParameterError {
+      return new InvalidParameterError(`Parameter ${parameter} is invalid`);
+    }
   }
   
   export class UnauthorizedError extends HttpError {
