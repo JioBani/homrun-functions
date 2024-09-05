@@ -177,6 +177,7 @@ export class UserService{
         });
         
         if (Object.keys(userinfoUpdateDto).length > 0){
+            console.log(userinfoUpdateDto);
             await UserReferences.getUserDocument(data.uid).update(userinfoUpdateDto);
         }
         else{
@@ -192,11 +193,11 @@ export class UserService{
     }){
         const result: { [key: string]: any } = {};
 
-        // 각 필드가 undefined가 아닌 경우에만 result 객체에 추가
-        if (data.displayName !== undefined) result.displayName = data.displayName;
-        if (data.gender !== undefined) result.gender = data.gender;
-        if (data.birth !== undefined) result.birth = data.birth;
-        if (data.interestedRegions !== undefined) result.interestedRegions = data.interestedRegions;
+        // 각 필드가 undefined 또는 null이 아닌 경우에만 result 객체에 추가
+        if (data.displayName !== undefined && data.displayName !== null) result.displayName = data.displayName;
+        if (data.gender !== undefined && data.gender !== null) result.gender = data.gender;
+        if (data.birth !== undefined && data.birth !== null) result.birth = data.birth;
+        if (data.interestedRegions !== undefined && data.interestedRegions !== null) result.interestedRegions = data.interestedRegions;
   
         return result;
     }
