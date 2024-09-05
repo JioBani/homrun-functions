@@ -31,8 +31,11 @@ import { ScrapService } from './scrap/scrap.service';
 import { validateRegions } from './value/region.value';
 import { TimeFormatter } from './common/time_formatter';
 import { checkDisplayNameAvailability } from './common/display_name_validator';
+import { isBoolean, isNumber, isString } from './common/type_check';
 
 //TODO 클라이언트의 요청 파라미터를 어디서 검증 할 것인지
+//TODO 파라미터가 null일때 
+//TODO 파라미터 타입검사하기
 
 dotenv.config();
 
@@ -94,7 +97,7 @@ export const sign_up = functions.region("asia-northeast3").https.onRequest(
     }
 
    
-    if (!displayName) {
+    if (!isString(displayName)) {
       throw InvalidParameterError.fromParameter("displayName");
     }
     else{
@@ -102,16 +105,17 @@ export const sign_up = functions.region("asia-northeast3").https.onRequest(
       await checkDisplayNameAvailability(displayName);
     }
 
-    if (!gender || !Object.values(Gender).includes(gender)) {
+    if (gender == null || !Object.values(Gender).includes(gender)) {
       throw InvalidParameterError.fromParameter("gender");
     }
-
-    if (!birth) {
-      throw InvalidParameterError.fromParameter("birth");
-    }
+   
 
     //#. brith는 string을 TimeStamp형식으로 변환해서 전달
     //TODO 시간 범위 체크를 해야할지 결정하기(14세 이상, 1800년대, 미래 등)
+    if (birth == null) {
+      throw InvalidParameterError.fromParameter("birth");
+    }
+
     let birthDate;
 
     try{
@@ -152,7 +156,11 @@ export const update_like_state = functions.region("asia-northeast3").https.onReq
 
     const { doc, state } = request.body;
 
-    if (!doc || typeof state !== 'number') {
+    if(!isString(doc)){
+      throw InvalidParameterError.fromParameter("doc");
+    }
+
+    if (!isNumber(state)) {
       throw InvalidParameterError.fromParameter("state");
     }
 
@@ -182,15 +190,15 @@ export const make_site_review_doc = functions.region("asia-northeast3").https.on
 
     const { noticeId, title, content ,thumbnailImageName} = request.body;
 
-    if (!noticeId) {
+    if (!isString(noticeId) ) {
       throw InvalidParameterError.fromParameter("noticeId");
     }
 
-    if (!title) {
+    if (!isString(title)) {
       throw InvalidParameterError.fromParameter("title");
     }
 
-     if (!content) {
+     if (!isString(content)) {
       throw InvalidParameterError.fromParameter("content");
     }
 
@@ -220,7 +228,7 @@ export const delete_site_review = functions.region("asia-northeast3").https.onRe
 
     const {path} = request.body;
 
-    if (!path) {
+    if (!isString(path)) {
       throw InvalidParameterError.fromParameter("path");
     }
     const result = await siteReviewService.deleteReview(
@@ -235,6 +243,7 @@ export const delete_site_review = functions.region("asia-northeast3").https.onRe
   })
 );
 
+//TODO title, content, 썸네일 타입검사 필요
 export const update_site_review = functions.region("asia-northeast3").https.onRequest(
   withAuthHandler(async (request: Request, response: Response, decodedIdToken: DecodedIdToken): Promise<ApiResponse> => {
     const authHeader = request.headers.authorization;
@@ -246,12 +255,24 @@ export const update_site_review = functions.region("asia-northeast3").https.onRe
 
     const { noticeId, reviewId, title, content, thumbnailImageName} = request.body;
 
-    if (!noticeId) {
+    if (!isString(noticeId)) {
       throw InvalidParameterError.fromParameter("noticeId");
     }
 
-    if (!reviewId) {
+    if (!isString(reviewId)) {
       throw InvalidParameterError.fromParameter("reviewId");
+    }
+
+    if(!isString(title)){
+      throw InvalidParameterError.fromParameter("title");
+    }
+
+    if(!isString(content)){
+      throw InvalidParameterError.fromParameter("content");
+    }
+
+    if(!isString(thumbnailImageName)){
+      throw InvalidParameterError.fromParameter("thumbnailImageName");
     }
 
     const result = await siteReviewService.updateReview({
@@ -275,11 +296,11 @@ export const increase_site_review_view = functions.region("asia-northeast3").htt
   withApiResponseHandler(async (request : Request , response : Response) : Promise<ApiResponse>=>{
     const {noticeId , siteReviewId} = request.body;
 
-    if (!noticeId) {
+    if (!isString(noticeId)) {
       throw InvalidParameterError.fromParameter("noticeId");
     }
 
-    if (!siteReviewId) {
+    if (!isString(siteReviewId)) {
       throw InvalidParameterError.fromParameter("siteReviewId");
     }
 
@@ -299,7 +320,7 @@ export const increase_notice_view_count = functions.region("asia-northeast3").ht
   withApiResponseHandler(async (request : Request , response : Response) : Promise<ApiResponse>=>{
     const {noticeId} = request.body;
 
-    if (!noticeId) {
+    if(!isString(noticeId)) {
       throw InvalidParameterError.fromParameter("noticeId");
     }
 
@@ -316,11 +337,11 @@ export const like_notice = functions.region("asia-northeast3").https.onRequest(
   withAuthHandler(async (request: Request, response: Response, decodedIdToken: DecodedIdToken): Promise<ApiResponse> => {
     const { noticeId, like} = request.body;
 
-    if (!noticeId) {
+    if (typeof noticeId !== "string") {
       throw InvalidParameterError.fromParameter("noticeId");
     }
 
-    if (!like && !(typeof like === "boolean")) {
+    if (typeof like !== "boolean") {
       throw InvalidParameterError.fromParameter("like");
     }
 
@@ -345,11 +366,11 @@ export const update_notice_scrap_count = functions.region("asia-northeast3").htt
   withAuthHandler(async (request: Request, response: Response, decodedIdToken: DecodedIdToken): Promise<ApiResponse> => {
     const { noticeId, up} = request.body;
 
-    if (!noticeId) {
+    if (!isString(noticeId)) {
       throw InvalidParameterError.fromParameter("noticeId");
     }
 
-    if (!up && !(typeof up === "boolean")) {
+    if (!isBoolean(up)) {
       throw InvalidParameterError.fromParameter("up");
     }
 
@@ -408,7 +429,7 @@ export const update_user_info = functions.region("asia-northeast3").https.onRequ
   })
 );
 
-//#. 닉네임 확인
+//#. 닉네임
 export const check_display_name = functions.region("asia-northeast3").https.onRequest(
   withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
     const {displayName} =request.body;
