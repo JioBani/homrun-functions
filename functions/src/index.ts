@@ -16,7 +16,7 @@ import { AuthService } from "./auth/auth.service";
 
 import { SocialProvider } from "./enum/social-provider.enum";
 import { ApiResponse } from "./model/api-response";
-import { BadRequestError, UnauthorizedError } from "./error/http.error";
+import { BadRequestError, InvalidParameterError, UnauthorizedError } from "./error/http.error";
 import { withApiResponseHandler, withAuthHandler } from './middleware/api-response-handler';
 
 import * as functions from "firebase-functions";
@@ -30,6 +30,9 @@ import { Gender } from './enum/gender.enum';
 import { ScrapService } from './scrap/scrap.service';
 import { validateRegions } from './value/region.value';
 import { TimeFormatter } from './common/time_formatter';
+import { checkDisplayNameAvailability } from './common/display_name_validator';
+
+//TODO 클라이언트의 요청 파라미터를 어디서 검증 할 것인지
 
 dotenv.config();
 
@@ -45,6 +48,8 @@ const commentService = new CommentService();
 const siteReviewService = new SiteReviewService();
 const noticeService = new NoticeService();
 const scrapService = new ScrapService();
+const userService = new UserService();  
+
 
 //소셜 로그인
 export const sign_in = functions.region("asia-northeast3").https.onRequest(
@@ -72,6 +77,7 @@ export const sign_in = functions.region("asia-northeast3").https.onRequest(
 
 
 //#. 소셜 회원가입
+//TODO 임시로 유효성을 index 에서 처리
 export const sign_up = functions.region("asia-northeast3").https.onRequest(
   withApiResponseHandler(async (request : Request , response : Response) : Promise<ApiResponse>=>{
     const authHeader = request.headers.authorization;
@@ -84,20 +90,24 @@ export const sign_up = functions.region("asia-northeast3").https.onRequest(
 
     if (!Object.values(SocialProvider).includes(socialProvider)) {
       console.log(socialProvider);
-      throw new BadRequestError({message : 'Invalid social provider'});
+      throw InvalidParameterError.fromParameter('social provider');
     }
 
    
     if (!displayName) {
-      throw BadRequestError.InvalidParameterError("displayName");
+      throw InvalidParameterError.fromParameter("displayName");
+    }
+    else{
+      //#. 닉네임 유효성 확인
+      await checkDisplayNameAvailability(displayName);
     }
 
     if (!gender || !Object.values(Gender).includes(gender)) {
-      throw BadRequestError.InvalidParameterError("gender");
+      throw InvalidParameterError.fromParameter("gender");
     }
 
     if (!birth) {
-      throw BadRequestError.InvalidParameterError("birth");
+      throw InvalidParameterError.fromParameter("birth");
     }
 
     //#. brith는 string을 TimeStamp형식으로 변환해서 전달
@@ -107,12 +117,12 @@ export const sign_up = functions.region("asia-northeast3").https.onRequest(
     try{
       birthDate = TimeFormatter.datStringToDateTime(birth);
     }catch(e){
-      throw BadRequestError.InvalidParameterError("birth");
+      throw InvalidParameterError.fromParameter("birth");
     }
 
     if(!interestedRegions || !validateRegions(interestedRegions))
     {
-      throw BadRequestError.InvalidParameterError("interestedRegions");
+      throw InvalidParameterError.fromParameter("interestedRegions");
     }
 
     const result = await authService.signUp({
@@ -143,7 +153,7 @@ export const update_like_state = functions.region("asia-northeast3").https.onReq
     const { doc, state } = request.body;
 
     if (!doc || typeof state !== 'number') {
-      throw BadRequestError.InvalidParameterError("state");
+      throw InvalidParameterError.fromParameter("state");
     }
 
     const docRef = admin.firestore().doc(doc);
@@ -173,15 +183,15 @@ export const make_site_review_doc = functions.region("asia-northeast3").https.on
     const { noticeId, title, content ,thumbnailImageName} = request.body;
 
     if (!noticeId) {
-      throw BadRequestError.InvalidParameterError("noticeId");
+      throw InvalidParameterError.fromParameter("noticeId");
     }
 
     if (!title) {
-      throw BadRequestError.InvalidParameterError("title");
+      throw InvalidParameterError.fromParameter("title");
     }
 
      if (!content) {
-      throw BadRequestError.InvalidParameterError("content");
+      throw InvalidParameterError.fromParameter("content");
     }
 
     const result = await siteReviewService.makeDocument(
@@ -211,7 +221,7 @@ export const delete_site_review = functions.region("asia-northeast3").https.onRe
     const {path} = request.body;
 
     if (!path) {
-      throw BadRequestError.InvalidParameterError("path");
+      throw InvalidParameterError.fromParameter("path");
     }
     const result = await siteReviewService.deleteReview(
       decodedIdToken,
@@ -237,11 +247,11 @@ export const update_site_review = functions.region("asia-northeast3").https.onRe
     const { noticeId, reviewId, title, content, thumbnailImageName} = request.body;
 
     if (!noticeId) {
-      throw BadRequestError.InvalidParameterError("noticeId");
+      throw InvalidParameterError.fromParameter("noticeId");
     }
 
     if (!reviewId) {
-      throw BadRequestError.InvalidParameterError("reviewId");
+      throw InvalidParameterError.fromParameter("reviewId");
     }
 
     const result = await siteReviewService.updateReview({
@@ -266,11 +276,11 @@ export const increase_site_review_view = functions.region("asia-northeast3").htt
     const {noticeId , siteReviewId} = request.body;
 
     if (!noticeId) {
-      throw BadRequestError.InvalidParameterError("noticeId");
+      throw InvalidParameterError.fromParameter("noticeId");
     }
 
     if (!siteReviewId) {
-      throw BadRequestError.InvalidParameterError("siteReviewId");
+      throw InvalidParameterError.fromParameter("siteReviewId");
     }
 
     const result = await siteReviewService.increaseReviewViewCount(
@@ -290,7 +300,7 @@ export const increase_notice_view_count = functions.region("asia-northeast3").ht
     const {noticeId} = request.body;
 
     if (!noticeId) {
-      throw BadRequestError.InvalidParameterError("noticeId");
+      throw InvalidParameterError.fromParameter("noticeId");
     }
 
     const result = await noticeService.increaseViewCount(noticeId);
@@ -307,11 +317,11 @@ export const like_notice = functions.region("asia-northeast3").https.onRequest(
     const { noticeId, like} = request.body;
 
     if (!noticeId) {
-      throw BadRequestError.InvalidParameterError("noticeId");
+      throw InvalidParameterError.fromParameter("noticeId");
     }
 
     if (!like && !(typeof like === "boolean")) {
-      throw BadRequestError.InvalidParameterError("like");
+      throw InvalidParameterError.fromParameter("like");
     }
 
     const result = await noticeService.like(decodedIdToken , noticeId , like);
@@ -336,11 +346,11 @@ export const update_notice_scrap_count = functions.region("asia-northeast3").htt
     const { noticeId, up} = request.body;
 
     if (!noticeId) {
-      throw BadRequestError.InvalidParameterError("noticeId");
+      throw InvalidParameterError.fromParameter("noticeId");
     }
 
     if (!up && !(typeof up === "boolean")) {
-      throw BadRequestError.InvalidParameterError("up");
+      throw InvalidParameterError.fromParameter("up");
     }
 
     const result = await noticeService.updateNoticeScrapCount(noticeId, up);
@@ -362,6 +372,57 @@ export const delete_all_notice_scrap = functions.region("asia-northeast3").https
     });
   })
 );
+
+export const update_user_info = functions.region("asia-northeast3").https.onRequest(
+  withAuthHandler(async (request: Request, response: Response, decodedIdToken: DecodedIdToken): Promise<ApiResponse> => {
+
+    const {displayName, gender, birth,interestedRegions} = request.body;
+
+    if(displayName){
+      await checkDisplayNameAvailability(displayName);
+    }
+
+    //#. brith는 string을 TimeStamp형식으로 변환해서 전달
+    //TODO 시간 범위 체크를 해야할지 결정하기(14세 이상, 1800년대, 미래 등)
+    let birthDate = undefined;
+    if(birth){
+      try{
+        birthDate = TimeFormatter.datStringToDateTime(birth);
+      }catch(e){
+        throw InvalidParameterError.fromParameter("birth");
+      }
+    }  
+
+    await userService.updateUserInfo({
+      uid : decodedIdToken.uid,
+      displayName : displayName,
+      gender : gender,
+      birth : birthDate,
+      interestedRegions : interestedRegions
+    });
+
+    return new ApiResponse({
+      status: 200,
+      data: null
+    });
+  })
+);
+
+//#. 닉네임 확인
+export const check_display_name = functions.region("asia-northeast3").https.onRequest(
+  withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
+    const {displayName} =request.body;
+
+    //#. 닉네임 유효성 검사
+    await checkDisplayNameAvailability(displayName);   
+
+    return new ApiResponse({
+      status: 200,
+      data: null
+    });
+  })
+);
+
 
 // export const make_notice_documents_force = functions.region("asia-northeast3").https.onRequest(
 //   withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
