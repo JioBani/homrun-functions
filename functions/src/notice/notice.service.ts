@@ -137,7 +137,7 @@ export class NoticeService{
                         this.convertStringToTimestamp(item[APTAnnouncementFields.applicationReceptionStartDate]),
                     [NoticeDtoFields.recruitmentPublicAnnouncementDate] : 
                         this.convertStringToTimestamp(item[APTAnnouncementFields.recruitmentPublicAnnouncementDate]),
-                    [NoticeDtoFields.info] : item
+                    [NoticeDtoFields.info] : APTAnnouncement.fromMap(item).toMapWithNull()
                 });
 
                 return new NoticeDocumentResult({
