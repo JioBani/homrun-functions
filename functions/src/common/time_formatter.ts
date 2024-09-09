@@ -29,4 +29,36 @@ export class TimeFormatter{
         //#.  Date 객체를 Timestamp로 변환
         return Timestamp.fromDate(date)
     }    
+
+    /**
+     * 'YYYY-MM-DD' 형식의 문자열을 Firebase Timestamp로 변환하는 함수
+     * @param dateStr - 'YYYY-MM-DD' 형식의 날짜 문자열
+     * @returns Firebase Timestamp
+     */
+    static sleshStringToFirebaseTimestamp(dateStr: string): Timestamp {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        
+        // 해당 날짜로 Date 객체 생성
+        const date = new Date(year, month - 1, day);
+        
+        return Timestamp.fromDate(date);
+    }
+
+    /**
+     * 'YYYY-MM-DD' | undefind | unll 을 Firebase Timestamp로 변환하는 함수
+     * @param dateStr - 'YYYY-MM-DD' 형식의 날짜 문자열 | null | undefined
+     * @returns Firebase Timestamp | undefined
+     */
+    static trySleshStringToFirebaseTimestamp(dateString: string | null | undefined) : Timestamp | null | undefined{
+        if(dateString == null){
+            if(dateString === null){
+                return null;
+            }
+            else{
+                return undefined;
+            }
+        }{
+            return TimeFormatter.sleshStringToFirebaseTimestamp(dateString);
+        }
+    }
 }
