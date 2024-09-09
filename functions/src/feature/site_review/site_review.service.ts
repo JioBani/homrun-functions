@@ -1,6 +1,6 @@
 import { DecodedIdToken } from "firebase-admin/auth";
 import * as firebaseAdmin from 'firebase-admin';
-import { ForbiddenError, NotFoundError, UnauthorizedError } from '../error/http.error';
+import { ForbiddenError, NotFoundError, UnauthorizedError } from '../../error/http.error';
 import { SiteReviewReferences } from "./site_review.references";
 import { DocumentReference, Timestamp } from "firebase-admin/firestore";
 import { SiteReviewFields } from "./value/site_review.fields";

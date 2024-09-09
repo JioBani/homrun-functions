@@ -1,9 +1,9 @@
 import * as firebaseAdmin from 'firebase-admin';
-import { SocialProvider } from "../enum/social-provider.enum";
+import { SocialProvider } from "../../enum/social-provider.enum";
 import { UserReferences } from "./user.references";
-import { UserDto } from "../model/user.dto";
-import { Gender } from "../enum/gender.enum";
-import { BadRequestError, ConflictError, InternalServerError} from '../error/http.error';
+import { UserDto } from "../../model/user.dto";
+import { Gender } from "../../enum/gender.enum";
+import { BadRequestError, ConflictError, InternalServerError} from '../../error/http.error';
 import { Timestamp, Transaction } from 'firebase-admin/firestore';
 
 export class UserService{

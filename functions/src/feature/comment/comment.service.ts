@@ -2,9 +2,9 @@ import * as dotenv from 'dotenv';
 import * as firebaseAdmin from 'firebase-admin';
 import { DecodedIdToken } from 'firebase-admin/auth';
 import { DocumentReference} from 'firebase-admin/firestore';
-import { LikeFields } from '../comment/values/like.fields.value';
+import { LikeFields } from './values/like.fields.value';
 import { CommentFields } from './values/comment.fields.value';
-import { InvalidParameterError, UnauthorizedError } from '../error/http.error';
+import { InvalidParameterError, UnauthorizedError } from '../../error/http.error';
 import { CommentReferences } from './comment.references';
 
 //TODO error 코드

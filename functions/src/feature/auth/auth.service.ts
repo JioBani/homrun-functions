@@ -1,12 +1,12 @@
 import * as dotenv from 'dotenv';
 import * as firebaseAdmin from 'firebase-admin';
 import axios, { AxiosResponse } from 'axios';
-import { SocialProvider } from '../enum/social-provider.enum';
-import {KakaoUserResponse} from '../model/kakao/kakao-user-resonse'
-import { NaverProfileResponse } from '../model/naver/naver-profile-response';
-import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, InternalServerError } from '../error/http.error';
+import { SocialProvider } from '../../enum/social-provider.enum';
+import {KakaoUserResponse} from '../../model/kakao/kakao-user-resonse'
+import { NaverProfileResponse } from '../../model/naver/naver-profile-response';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, InternalServerError } from '../../error/http.error';
 import { UserService } from '../user/user.service';
-import { Gender } from '../enum/gender.enum';
+import { Gender } from '../../enum/gender.enum';
 import { Timestamp } from 'firebase-admin/firestore';
 
 //TODO error 코드

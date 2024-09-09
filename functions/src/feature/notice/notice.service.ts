@@ -7,10 +7,11 @@ import axios from 'axios';
 import { APTAnnouncementFields } from "./value/apt_announcement.fields";
 import { logger } from "firebase-functions";
 import { NoticeDocumentResult } from "./model/notice_document_result";
-import { applyhomeInfoDetailServiceKey } from "../sucure/apply_home_info_detail.service_key";
+import { applyhomeInfoDetailServiceKey } from "../../sucure/apply_home_info_detail.service_key";
 import { LikeFields } from "./value/like.fields";
-import {  NotFoundError } from "../error/http.error";
+import {  NotFoundError } from "../../error/http.error";
 import { FieldValue } from 'firebase-admin/firestore';
+import { APTAnnouncement } from "../../model/apt_announcement";
 
 export class NoticeService{
        
@@ -167,6 +168,8 @@ export class NoticeService{
         }
     }
 
+    //TODO utills로 옮겨야 할 수도
+    //TODO 공고 날짜가 없는 경우 어떻게 처리할지 - 현재 timestamp = 0으로 처리하는건 별로인듯
     private convertStringToTimestamp(dateString: string): Timestamp {
         try {
 

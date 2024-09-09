@@ -1,5 +1,5 @@
 import { ConflictError, InvalidParameterError } from "../error/http.error";
-import { UserReferences } from "../user/user.references";
+import { UserReferences } from "../feature/user/user.references";
 
 /**
  * 주어진 닉네임의 사용 가능 여부를 검사합니다.
@@ -11,7 +11,6 @@ import { UserReferences } from "../user/user.references";
  * @throws {ConflictError} - 닉네임이 이미 존재할 경우.
  */
 export async function checkDisplayNameAvailability(displayName: string) {
-
     //#. 문자열 확인
     if (typeof displayName !== 'string') {
         throw new InvalidParameterError('닉네임이 문자열이 아닙니다.');
@@ -20,7 +19,7 @@ export async function checkDisplayNameAvailability(displayName: string) {
     //#. 유효성 확인
     validateDisplayName(displayName);
 
-    //#. 중복 확인
+    //#. 중복
     await checkDisplayNameDuplicate(displayName);
 }
 
