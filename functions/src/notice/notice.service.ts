@@ -147,7 +147,7 @@ export class NoticeService{
                 });
             }
         }catch(e){
-            logger.error(`[NoticeService.makeNoticeDocument()] ${e}`);
+            logger.error(`[NoticeService.makeNoticeDocument()] ${e}\n`);
             return new NoticeDocumentResult({
                 noticeId : noticeId,
                 isSuccess : false,
