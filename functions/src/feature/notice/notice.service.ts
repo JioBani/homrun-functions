@@ -4,14 +4,15 @@ import { NoticeDtoFields } from "./value/notice_dto.fields";
 import * as firebaseAdmin from 'firebase-admin';
 import { CollectionReference, Timestamp } from "firebase-admin/firestore";
 import axios from 'axios';
-import { APTAnnouncementFields } from "./value/apt_announcement.fields";
+import { APTAnnouncementFields } from "../../model/apply_home_info/apt_announcement.fields";
 import { logger } from "firebase-functions";
 import { NoticeDocumentResult } from "./model/notice_document_result";
 import { applyhomeInfoDetailServiceKey } from "../../sucure/apply_home_info_detail.service_key";
 import { LikeFields } from "./value/like.fields";
 import {  NotFoundError } from "../../error/http.error";
 import { FieldValue } from 'firebase-admin/firestore';
-import { APTAnnouncement } from "../../model/apt_announcement";
+import { APTAnnouncement } from "../../model/apply_home_info/apt_announcement";
+import { AptAnnouncementByHouseType } from "../../model/apply_home_info/apt_announcement_by_house_type";
 
 export class NoticeService{
        
@@ -68,6 +69,7 @@ export class NoticeService{
     }    
     
 
+    //TODO 데이터베이스에 진행 로그 남기기
     async makeNoticeDocuments(){
         try {
             const currentDate = new Date();
@@ -85,9 +87,11 @@ export class NoticeService{
 
             const noticeCollection = NoticeReferences.getNoticeCollection();
 
-            var failure = 0;
-            var generated = 0;
-            
+            let failure = 0;
+            let generated = 0;
+            let updated =  0;
+            let byHouseTypeSuccess =  0;
+
             await Promise.all<NoticeDocumentResult>(data.map(async (item: any) => {
                 const result = await this.makeNoticeDocument(noticeCollection , item);
                 if(!result.isSuccess){
@@ -97,15 +101,31 @@ export class NoticeService{
                 if(result.isGenerated){
                     generated++;
                 }
+
+                if(result.isUpdated){
+                    updated++;
+                }
+
+                if(result.isByHouseTypeInfoSuccess){
+                    byHouseTypeSuccess++;
+                }
             }))           
        
 
-            logger.log(`
+            const totalCount = response.data["currentCount"];
+
+            const result = `
                 APT 분양 공고 정보 업데이트 완료\n
                 범위 : ~${formattedDate}\n
-                성공률 : ${response.data["currentCount"] - failure} / ${response.data["currentCount"]}\n
-                추가된 문서 수 : ${generated}\n
-            `)
+                추가된 문서 수 : ${generated} / ${totalCount}\n
+                성공률 : ${totalCount - failure} / ${totalCount}\n
+                업데이트 수 : ${updated} / ${totalCount}\n
+                주택 유형별 세부정보 성공률 : ${byHouseTypeSuccess} / ${totalCount}\n
+            `; 
+
+            logger.log(result)
+
+            return result;
 
         } catch (error) {
             logger.error('Unexpected error:', error);
@@ -119,40 +139,57 @@ export class NoticeService{
         try{
 
             const doc = await noticeCollection.doc(noticeId).get();
+            let aptInfo : APTAnnouncement;
 
-            if(doc.exists){
+            try{
+                aptInfo = APTAnnouncement.fromMap(item);
+            }catch(e){
+                logger.error(`[NoticeService.makeNoticeDocument()] APTAnnouncement 파싱 오류 : ${e}`);
+
                 return new NoticeDocumentResult({
                     noticeId : noticeId,
-                    isSuccess : true,
+                    isSuccess : false,
                     isGenerated : false,
+                    isUpdated : false,
+                    isByHouseTypeInfoSuccess : false,
                 });
             }
-            else{
-                await noticeCollection.doc(noticeId).set({
-                    [NoticeDtoFields.noticeId] : noticeId,
-                    [NoticeDtoFields.views] : 0,
-                    [NoticeDtoFields.likes] : 0,
-                    [NoticeDtoFields.scraps] : 0,
-                    [NoticeDtoFields.houseName] : item[APTAnnouncementFields.houseName],
-                    [NoticeDtoFields.applicationReceptionStartDate] : 
-                        this.convertStringToTimestamp(item[APTAnnouncementFields.applicationReceptionStartDate]),
-                    [NoticeDtoFields.recruitmentPublicAnnouncementDate] : 
-                        this.convertStringToTimestamp(item[APTAnnouncementFields.recruitmentPublicAnnouncementDate]),
-                    [NoticeDtoFields.info] : APTAnnouncement.fromMap(item).toMapWithNull()
-                });
 
-                return new NoticeDocumentResult({
-                    noticeId : noticeId,
-                    isSuccess : true,
-                    isGenerated : true,
-                });
-            }
+            const infoByHouseType : AptAnnouncementByHouseType | null = await this.getAptAnnouncementByHouseType(
+                aptInfo.houseManageNumber,
+                aptInfo.publicAnnouncementNumber,
+            ); 
+
+            await noticeCollection.doc(noticeId).set({
+                [NoticeDtoFields.noticeId] : noticeId,
+                [NoticeDtoFields.views] : 0,
+                [NoticeDtoFields.likes] : 0,
+                [NoticeDtoFields.scraps] : 0,
+                [NoticeDtoFields.houseName] : item[APTAnnouncementFields.houseName],
+                [NoticeDtoFields.applicationReceptionStartDate] : 
+                    this.convertStringToTimestamp(item[APTAnnouncementFields.applicationReceptionStartDate]),
+                [NoticeDtoFields.recruitmentPublicAnnouncementDate] : 
+                    this.convertStringToTimestamp(item[APTAnnouncementFields.recruitmentPublicAnnouncementDate]),
+                [NoticeDtoFields.info] : APTAnnouncement.fromMap(item).toMapWithNull(),
+                "infoByHouseType" : infoByHouseType?.toMap() ?? null, //TODO 필드로 수정
+            });
+
+            return new NoticeDocumentResult({
+                noticeId : noticeId,
+                isSuccess : true,
+                isGenerated : !doc.exists,
+                isUpdated : doc.exists,
+                isByHouseTypeInfoSuccess : infoByHouseType != null,
+            });
+
         }catch(e){
             logger.error(`[NoticeService.makeNoticeDocument()] ${e}\n`);
             return new NoticeDocumentResult({
                 noticeId : noticeId,
                 isSuccess : false,
                 isGenerated : false,
+                isUpdated : false,
+                isByHouseTypeInfoSuccess : false,
                 error : e
             });
         }
