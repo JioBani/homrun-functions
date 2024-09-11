@@ -12,7 +12,7 @@ import { Response} from 'express';
 
 import {Request} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import { AuthService } from "./auth/auth.service";
+import { AuthService } from "./feature/auth/auth.service";
 
 import { SocialProvider } from "./enum/social-provider.enum";
 import { ApiResponse } from "./model/api-response";
@@ -20,22 +20,23 @@ import { BadRequestError, InvalidParameterError, UnauthorizedError } from "./err
 import { withApiResponseHandler, withAuthHandler } from './middleware/api-response-handler';
 
 import * as functions from "firebase-functions";
-import { CommentService } from './comment/comment.service';
-import { SiteReviewService } from './site_review/site_review.service';
+import { CommentService } from './feature/comment/comment.service';
+import { SiteReviewService } from './feature/site_review/site_review.service';
 import { DecodedIdToken } from 'firebase-admin/auth';
 import { FirebaseValue } from './value/firebase.value';
-import { NoticeService } from './notice/notice.service';
-import { UserService } from './user/user.service';
+import { NoticeService } from './feature/notice/notice.service';
+import { UserService } from './feature/user/user.service';
 import { Gender } from './enum/gender.enum';
-import { ScrapService } from './scrap/scrap.service';
+import { ScrapService } from './feature/scrap/scrap.service';
 import { validateRegions } from './value/region.value';
-import { TimeFormatter } from './common/time_formatter';
-import { checkDisplayNameAvailability } from './common/display_name_validator';
-import { isBoolean, isNumber, isString } from './common/type_check';
+import { TimeFormatter } from './utils/time_formatter';
+import { checkDisplayNameAvailability } from './utils/display_name_validator';
+import { isBoolean, isNumber, isString } from './utils/type_check';
 
 //TODO 클라이언트의 요청 파라미터를 어디서 검증 할 것인지
 //TODO 파라미터가 null일때 
 //TODO 파라미터 타입검사하기
+//TODO 컨트롤러로 라우터 분리
 
 dotenv.config();
 
@@ -444,13 +445,25 @@ export const check_display_name = functions.region("asia-northeast3").https.onRe
   })
 );
 
+// export const get_house_type_announcement = functions.region("asia-northeast3").https.onRequest(
+//   withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
+//     const {houseNumber , pbNumber} = request.body;
+
+//     const result =  await noticeService.getAptAnnouncementByHouseType(houseNumber , pbNumber);
+//     return new ApiResponse({
+//       status: 200,
+//       data: result?.toMap()
+//     });
+//   })
+// );
+
 
 // export const make_notice_documents_force = functions.region("asia-northeast3").https.onRequest(
 //   withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
-//     await noticeService.makeNoticeDocuments();
+//     const result = await noticeService.makeNoticeDocuments();
 //     return new ApiResponse({
 //       status: 200,
-//       data: null
+//       data: result
 //     });
 //   })
 // );
