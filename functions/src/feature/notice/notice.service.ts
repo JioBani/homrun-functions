@@ -13,6 +13,7 @@ import {  NotFoundError } from "../../error/http.error";
 import { FieldValue } from 'firebase-admin/firestore';
 import { APTAnnouncement } from "../../model/apply_home_info/apt_announcement";
 import { AptAnnouncementByHouseType } from "../../model/apply_home_info/apt_announcement_by_house_type";
+import { ProcessedAPTAnnouncementByHouseType } from "../../model/apply_home_info/processed_apt_announcement_by_house_type";
 
 export class NoticeService{
        
@@ -87,11 +88,15 @@ export class NoticeService{
 
             const noticeCollection = NoticeReferences.getNoticeCollection();
 
+            //#. 결과 출력
+            //TODO 함수로 분리하기
             let failure = 0;
             let generated = 0;
             let updated =  0;
             let byHouseTypeSuccess =  0;
-
+            let isProcessedAPTAnnouncementByHouseTypeSuccess =  0;
+            let isProcessedAPTAnnouncementByHouseTypeHasCountError =  0;
+            
             await Promise.all<NoticeDocumentResult>(data.map(async (item: any) => {
                 const result = await this.makeNoticeDocument(noticeCollection , item);
                 if(!result.isSuccess){
@@ -109,18 +114,28 @@ export class NoticeService{
                 if(result.isByHouseTypeInfoSuccess){
                     byHouseTypeSuccess++;
                 }
+
+                if(result.isProcessedAPTAnnouncementByHouseTypeSuccess){
+                    isProcessedAPTAnnouncementByHouseTypeSuccess++;
+                }
+
+                if(result.isProcessedAPTAnnouncementByHouseTypeHasCountError){
+                    isProcessedAPTAnnouncementByHouseTypeHasCountError++;
+                }
             }))           
        
 
             const totalCount = response.data["currentCount"];
 
             const result = `
-                APT 분양 공고 정보 업데이트 완료\n
-                범위 : ~${formattedDate}\n
-                추가된 문서 수 : ${generated} / ${totalCount}\n
-                성공률 : ${totalCount - failure} / ${totalCount}\n
-                업데이트 수 : ${updated} / ${totalCount}\n
-                주택 유형별 세부정보 성공률 : ${byHouseTypeSuccess} / ${totalCount}\n
+                APT 분양 공고 정보 업데이트 완료
+                범위 : ~${formattedDate}
+                추가된 문서 수 : ${generated} / ${totalCount}
+                성공률 : ${totalCount - failure} / ${totalCount}
+                업데이트 수 : ${updated} / ${totalCount}
+                주택 유형별 세부정보 성공률 : ${byHouseTypeSuccess} / ${totalCount}
+                주택 유형별 세부정보 가공 성공률 : ${isProcessedAPTAnnouncementByHouseTypeSuccess} / ${totalCount}
+                주택 유형별 세부정보 분양가 오류율 : ${isProcessedAPTAnnouncementByHouseTypeHasCountError} / ${totalCount}
             `; 
 
             logger.log(result)
@@ -152,14 +167,31 @@ export class NoticeService{
                     isGenerated : false,
                     isUpdated : false,
                     isByHouseTypeInfoSuccess : false,
+                    isProcessedAPTAnnouncementByHouseTypeSuccess : false,
+                    isProcessedAPTAnnouncementByHouseTypeHasCountError : false,
                 });
             }
 
-            const infoByHouseType : AptAnnouncementByHouseType | null = await this.getAptAnnouncementByHouseType(
+            //#. 주택 유형별 정보 가져오기
+            let infoByHouseTypeList : Array<AptAnnouncementByHouseType | null> = await this.getAptAnnouncementByHouseTypeList(
                 aptInfo.houseManageNumber,
                 aptInfo.publicAnnouncementNumber,
             ); 
 
+            //#. 주택 유형별 정보 가공 데이터 제작
+            let processedByHouseType : ProcessedAPTAnnouncementByHouseType | null;
+
+            if(!infoByHouseTypeList.includes(null)){ //#. 유형별 정보 리스트에  null 이 없으면 제작
+                processedByHouseType = ProcessedAPTAnnouncementByHouseType.fromData({
+                    announcementByHouseTypeList : infoByHouseTypeList as AptAnnouncementByHouseType[],
+                    totalSupplyHouseholdCount : aptInfo.totalSupplyHouseholdCount
+                });
+            }
+            else{ //#. 있으면 null
+                processedByHouseType = null;
+            }
+
+            //#. firestore에 업로드
             await noticeCollection.doc(noticeId).set({
                 [NoticeDtoFields.noticeId] : noticeId,
                 [NoticeDtoFields.views] : 0,
@@ -171,15 +203,19 @@ export class NoticeService{
                 [NoticeDtoFields.recruitmentPublicAnnouncementDate] : 
                     this.convertStringToTimestamp(item[APTAnnouncementFields.recruitmentPublicAnnouncementDate]),
                 [NoticeDtoFields.info] : APTAnnouncement.fromMap(item).toMapWithNull(),
-                "infoByHouseType" : infoByHouseType?.toMap() ?? null, //TODO 필드로 수정
+                [NoticeDtoFields.aptAnnouncementByTypeList] : infoByHouseTypeList.map((e)=>e?.toMap()),
+                [NoticeDtoFields.processedAPTAnnouncementByHouseType]  : processedByHouseType?.toMap() ?? null
             });
 
+            //#. 결과 리턴
             return new NoticeDocumentResult({
                 noticeId : noticeId,
                 isSuccess : true,
                 isGenerated : !doc.exists,
                 isUpdated : doc.exists,
-                isByHouseTypeInfoSuccess : infoByHouseType != null,
+                isByHouseTypeInfoSuccess : !infoByHouseTypeList.includes(null),
+                isProcessedAPTAnnouncementByHouseTypeSuccess : processedByHouseType != null ? true : false,
+                isProcessedAPTAnnouncementByHouseTypeHasCountError : processedByHouseType?.hasSupplyHouseholdsCountError ?? false
             });
 
         }catch(e){
@@ -190,6 +226,8 @@ export class NoticeService{
                 isGenerated : false,
                 isUpdated : false,
                 isByHouseTypeInfoSuccess : false,
+                isProcessedAPTAnnouncementByHouseTypeSuccess : false,
+                isProcessedAPTAnnouncementByHouseTypeHasCountError : false,
                 error : e
             });
         }
