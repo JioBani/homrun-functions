@@ -2,6 +2,9 @@ import { AptAnnouncementByHouseType } from "./apt_announcement_by_house_type";
 
 
 //TODO 성공 통계 구현?
+/**
+ *  APT 주택형별 상세조회 모델 {@link AptAnnouncementByHouseType} 을 가공한 정보를 저장하는 클래스 입니다.
+ */
 export class ProcessedAPTAnnouncementByHouseType{
     //#. 특별공급 전체 세대수
     totalSpecialSupplyHouseholds: number | null;
@@ -19,6 +22,9 @@ export class ProcessedAPTAnnouncementByHouseType{
     hasSupplyHouseholdsCountError : boolean;
 
 
+    /**
+     * Array<AptAnnouncementByHouseType | null>로 부터 인스턴스를 생성합니다
+     */
     static fromData(data : {
         announcementByHouseTypeList : (AptAnnouncementByHouseType | null)[],
         totalSupplyHouseholdCount? : number | null
