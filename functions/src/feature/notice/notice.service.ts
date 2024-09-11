@@ -299,4 +299,61 @@ export class NoticeService{
         }  
     }
 
+      /**
+     * 청약홈 API에서 주택형별 APT 분양 상세정보를 가져옵니다.
+     * @param houseNumber 주택관리번호
+     * @param announcementNumber 공고번호
+     */
+      async getAptAnnouncementByHouseTypeList(
+        houseNumber : string,
+        announcementNumber : string
+    ) : Promise<Array<AptAnnouncementByHouseType | null>>{ //TODO 오류시 배열을 반환할지 null 을 반환할지 생각하기
+        try {
+            let result : (AptAnnouncementByHouseType | null)[] = [];
+
+            const url = `https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancMdl?` +
+                        `page=1&` +
+                        `perPage=100&` +
+                        `cond%5BHOUSE_MANAGE_NO%3A%3AEQ%5D=${houseNumber}&` +
+                        `cond%5BPBLANC_NO%3A%3AEQ%5D=${announcementNumber}&`+
+                        `serviceKey=${applyhomeInfoDetailServiceKey}`;                        
+
+            const response = await axios.get(url);
+
+            //#. 상태 코드가 200이 아닌 경우
+            if(response.status != 200){
+                logger.error(`[NoticeService.getAptAnnouncementByHouseType()] 청약홈 API와 통신 불가 : ${response.status} , ${response.data}`);
+                return result;
+            }
+
+            const data = response.data.data;
+
+            //#. 가져온 데이터의 개수가 1보다 작은경우
+            if(data['currentCount'] < 1){
+                logger.error(`[NoticeService.getAptAnnouncementByHouseType()] 결과가 1보다 작음 : ${data}`);
+                return result;
+            }
+
+
+            await Promise.all<NoticeDocumentResult>(data.map(async (item: any) => {
+                 //#. 파싱
+                try{
+                    result.push(AptAnnouncementByHouseType.fromMap(item));  
+                }catch(e){
+                    //#. 파싱 실패한 경우
+                    logger.error(`[NoticeService.getAptAnnouncementByHouseType()] AptAnnouncementByHouseType 파싱 오류 : ${e}`);
+                    logger.error(`[NoticeService.getAptAnnouncementByHouseType()] AptAnnouncementByHouseType 응답 : ${data}`);
+                    result.push(null);
+                }   
+                
+            }))           
+       
+            return result;             
+
+        } catch (error) {
+            logger.error('[NoticeService.getAptAnnouncementByHouseType()] Unexpected error:', error);
+            return [];
+        }  
+    }
+
 }
