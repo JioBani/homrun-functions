@@ -1,19 +1,20 @@
-import { TimeFormatter } from "../common/time_formatter";
-import { APTAnnouncementFields } from "../notice/value/apt_announcement.fields";
+import { TimeFormatter } from "../../utils/time_formatter";
 import { Timestamp } from "firebase-admin/firestore";
+import { APTAnnouncementFields } from "./apt_announcement.fields";
 
+//TODO string | null 형 필드에 undefind가 들어갔을때 정상적으로 firebase에 저장되는지 확인 필요함
 export class APTAnnouncement {
   /**
    * 주택관리번호
    * @type {string}
    */
-  houseManageNumber?: string;
+  houseManageNumber: string;
 
   /**
    * 공고번호
    * @type {string}
    */
-  publicAnnouncementNumber?: string;
+  publicAnnouncementNumber: string;
 
   /**
    * 주택 구분 코드
@@ -257,12 +258,27 @@ export class APTAnnouncement {
 
   constructor(data: Partial<APTAnnouncement>) {
     Object.assign(this, data);
+    this.houseManageNumber = data.houseManageNumber as string;
+    this.publicAnnouncementNumber = data.publicAnnouncementNumber as string;
   }
 
   static fromMap(map: { [key: string]: any }): APTAnnouncement {
-    return new APTAnnouncement({
-      houseManageNumber: map[APTAnnouncementFields.houseManageNumber] as string,
-      publicAnnouncementNumber: map[APTAnnouncementFields.publicAnnouncementNumber] as string,
+    const houseManageNumber = map[APTAnnouncementFields.houseManageNumber] as string;
+
+    if(houseManageNumber == null){
+      throw Error('[APTAnnouncement.fromMap()] houseManageNumber 가 null 또는 undefind 입니다.');
+    }
+
+    const publicAnnouncementNumber = map[APTAnnouncementFields.publicAnnouncementNumber] as string;
+
+    if(publicAnnouncementNumber == null){
+      throw Error('[APTAnnouncement.fromMap()] publicAnnouncementNumber 가 null 또는 undefind 입니다.');
+    }
+    
+    return new APTAnnouncement(
+      {
+      houseManageNumber: houseManageNumber,
+      publicAnnouncementNumber: publicAnnouncementNumber!,
       houseSectionCode: map[APTAnnouncementFields.houseSectionCode] as string,
       subscriptionAreaName: map[APTAnnouncementFields.subscriptionAreaName] as string,
       recruitmentPublicAnnouncementDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTAnnouncementFields.recruitmentPublicAnnouncementDate] as string),
