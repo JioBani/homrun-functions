@@ -6,10 +6,10 @@ import { CollectionReference, Timestamp } from "firebase-admin/firestore";
 import { LikeFields } from "./value/like.fields";
 import {  NotFoundError } from "../../error/http.error";
 import { FieldValue } from 'firebase-admin/firestore';
-import { APTAnnouncement } from "@/model/apply_home_info/apt_announcement";
+import { APTAnnouncement } from "../../model/apply_home_info/apt_announcement";
 import { NoticeDocumentResult } from "./model/notice_document_result";
-import { ProcessedAPTAnnouncementByHouseType } from "@/model/apply_home_info/processed_apt_announcement_by_house_type";
-import { AptAnnouncementByHouseType } from "@/model/apply_home_info/apt_announcement_by_house_type";
+import { ProcessedAPTAnnouncementByHouseType } from "../../model/apply_home_info/processed_apt_announcement_by_house_type";
+import { AptAnnouncementByHouseType } from "../../model/apply_home_info/apt_announcement_by_house_type";
 import { logger } from "firebase-functions/v1";
 import { ApplyHommeApiService } from "../applyhome/applyhome_api.service";
 export class NoticeService{
@@ -222,7 +222,7 @@ export class NoticeService{
             currentDate.toISOString().split('T')[0]
         )
 
-        logger.log(`[ApplyHomeApiService.makeNoticeDocuments()]\n${resultLog}`);    
+        logger.log(`[ApplyHomeApiService.makeNoticeDocuments()]\n${JSON.stringify(resultLog)}`);    
 
         return resultLog;
     }
