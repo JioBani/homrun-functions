@@ -8,12 +8,12 @@ export class AptAnnouncementByHouseType {
     /**
      * 주택 관리 번호 (주택관리번호).
      */
-    houseManageNumber: string | null;
+    houseManageNumber: string;
 
     /**
      * 공고 번호 (공고번호).
      */
-    publicNoticeNumber: string | null;
+    publicNoticeNumber: string;
 
     /**
      * 모델 번호 (모델번호).
@@ -90,9 +90,11 @@ export class AptAnnouncementByHouseType {
      */
     highestSupplyPrice: string | null;
 
+    
+
     constructor(
-        houseManageNumber: string | null,
-        publicNoticeNumber: string | null,
+        houseManageNumber: string,
+        publicNoticeNumber: string,
         modelNumber: string | null,
         houseType: string | null,
         supplyArea: string | null,
