@@ -3,20 +3,18 @@ import { NoticeReferences } from "./notice.refernces";
 import { NoticeDtoFields } from "./value/notice_dto.fields";
 import * as firebaseAdmin from 'firebase-admin';
 import { CollectionReference, Timestamp } from "firebase-admin/firestore";
-import axios from 'axios';
-import { APTAnnouncementFields } from "../../model/apply_home_info/apt_announcement.fields";
-import { logger } from "firebase-functions";
-import { NoticeDocumentResult } from "./model/notice_document_result";
-import { applyhomeInfoDetailServiceKey } from "../../sucure/apply_home_info_detail.service_key";
 import { LikeFields } from "./value/like.fields";
 import {  NotFoundError } from "../../error/http.error";
 import { FieldValue } from 'firebase-admin/firestore';
-import { APTAnnouncement } from "../../model/apply_home_info/apt_announcement";
-import { AptAnnouncementByHouseType } from "../../model/apply_home_info/apt_announcement_by_house_type";
-import { ProcessedAPTAnnouncementByHouseType } from "../../model/apply_home_info/processed_apt_announcement_by_house_type";
-
+import { APTAnnouncement } from "@/model/apply_home_info/apt_announcement";
+import { NoticeDocumentResult } from "./model/notice_document_result";
+import { ProcessedAPTAnnouncementByHouseType } from "@/model/apply_home_info/processed_apt_announcement_by_house_type";
+import { AptAnnouncementByHouseType } from "@/model/apply_home_info/apt_announcement_by_house_type";
+import { logger } from "firebase-functions/v1";
+import { ApplyHommeApiService } from "../applyhome/applyhome_api.service";
 export class NoticeService{
-       
+
+    private applyHomeApiService : ApplyHommeApiService = new ApplyHommeApiService();
 
     async increaseViewCount(noticeId : string){
          const doc = await NoticeReferences.getNoticeDocument(noticeId);
@@ -69,211 +67,12 @@ export class NoticeService{
         return like;
     }    
     
-
-    //TODO 데이터베이스에 진행 로그 남기기
-    async makeNoticeDocuments(){
-        try {
-            const currentDate = new Date();
-            currentDate.setMonth(currentDate.getMonth() - 2);
-            const formattedDate = currentDate.toISOString().split('T')[0];
-            const url = `https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail?` +
-                        `page=1&` +
-                        `perPage=500&` +
-                        `cond%5BRCRIT_PBLANC_DE%3A%3AGTE%5D=${formattedDate}&` +
-                        `serviceKey=${applyhomeInfoDetailServiceKey}`;
-
-            const response = await axios.get(url);
-
-            const data = response.data.data;
-
-            const noticeCollection = NoticeReferences.getNoticeCollection();
-
-            //#. 결과 출력
-            //TODO 함수로 분리하기
-            let failure = 0;
-            let generated = 0;
-            let updated =  0;
-            let byHouseTypeSuccess =  0;
-            let isProcessedAPTAnnouncementByHouseTypeSuccess =  0;
-            let isProcessedAPTAnnouncementByHouseTypeHasCountError =  0;
-            
-            await Promise.all<NoticeDocumentResult>(data.map(async (item: any) => {
-                const result = await this.makeNoticeDocument(noticeCollection , item);
-                if(!result.isSuccess){
-                    failure++;
-                }
-
-                if(result.isGenerated){
-                    generated++;
-                }
-
-                if(result.isUpdated){
-                    updated++;
-                }
-
-                if(result.isByHouseTypeInfoSuccess){
-                    byHouseTypeSuccess++;
-                }
-
-                if(result.isProcessedAPTAnnouncementByHouseTypeSuccess){
-                    isProcessedAPTAnnouncementByHouseTypeSuccess++;
-                }
-
-                if(result.isProcessedAPTAnnouncementByHouseTypeHasCountError){
-                    isProcessedAPTAnnouncementByHouseTypeHasCountError++;
-                }
-            }))           
-       
-
-            const totalCount = response.data["currentCount"];
-
-            const result = `
-                APT 분양 공고 정보 업데이트 완료
-                범위 : ~${formattedDate}
-                추가된 문서 수 : ${generated} / ${totalCount}
-                성공률 : ${totalCount - failure} / ${totalCount}
-                업데이트 수 : ${updated} / ${totalCount}
-                주택 유형별 세부정보 성공률 : ${byHouseTypeSuccess} / ${totalCount}
-                주택 유형별 세부정보 가공 성공률 : ${isProcessedAPTAnnouncementByHouseTypeSuccess} / ${totalCount}
-                주택 유형별 세부정보 분양가 오류율 : ${isProcessedAPTAnnouncementByHouseTypeHasCountError} / ${totalCount}
-            `; 
-
-            logger.log(result)
-
-            return result;
-
-        } catch (error) {
-            logger.error('Unexpected error:', error);
-            throw error;
-        }         
-    }
-
-    private async makeNoticeDocument(noticeCollection : CollectionReference , item : any) : Promise<NoticeDocumentResult>{
-        const noticeId = item[APTAnnouncementFields.publicAnnouncementNumber];
-        
-        try{
-
-            const doc = await noticeCollection.doc(noticeId).get();
-            let aptInfo : APTAnnouncement;
-
-            try{
-                aptInfo = APTAnnouncement.fromMap(item);
-            }catch(e){
-                logger.error(`[NoticeService.makeNoticeDocument()] APTAnnouncement 파싱 오류 : ${e}`);
-
-                return new NoticeDocumentResult({
-                    noticeId : noticeId,
-                    isSuccess : false,
-                    isGenerated : false,
-                    isUpdated : false,
-                    isByHouseTypeInfoSuccess : false,
-                    isProcessedAPTAnnouncementByHouseTypeSuccess : false,
-                    isProcessedAPTAnnouncementByHouseTypeHasCountError : false,
-                });
-            }
-
-            //#. 주택 유형별 정보 가져오기
-            let infoByHouseTypeList : Array<AptAnnouncementByHouseType | null> = await this.getAptAnnouncementByHouseTypeList(
-                aptInfo.houseManageNumber,
-                aptInfo.publicAnnouncementNumber,
-            ); 
-
-            //#. 주택 유형별 정보 가공 데이터 제작
-            let processedByHouseType : ProcessedAPTAnnouncementByHouseType | null;
-
-            if(!infoByHouseTypeList.includes(null)){ //#. 유형별 정보 리스트에  null 이 없으면 제작
-                processedByHouseType = ProcessedAPTAnnouncementByHouseType.fromData({
-                    announcementByHouseTypeList : infoByHouseTypeList as AptAnnouncementByHouseType[],
-                    totalSupplyHouseholdCount : aptInfo.totalSupplyHouseholdCount
-                });
-            }
-            else{ //#. 있으면 null
-                processedByHouseType = null;
-            }
-
-            //#. firestore에 업로드
-            await noticeCollection.doc(noticeId).set({
-                [NoticeDtoFields.noticeId] : noticeId,
-                [NoticeDtoFields.views] : 0,
-                [NoticeDtoFields.likes] : 0,
-                [NoticeDtoFields.scraps] : 0,
-                [NoticeDtoFields.houseName] : item[APTAnnouncementFields.houseName],
-                [NoticeDtoFields.applicationReceptionStartDate] : 
-                    this.convertStringToTimestamp(item[APTAnnouncementFields.applicationReceptionStartDate]),
-                [NoticeDtoFields.recruitmentPublicAnnouncementDate] : 
-                    this.convertStringToTimestamp(item[APTAnnouncementFields.recruitmentPublicAnnouncementDate]),
-                [NoticeDtoFields.info] : APTAnnouncement.fromMap(item).toMapWithNull(),
-                [NoticeDtoFields.aptAnnouncementByTypeList] : infoByHouseTypeList.map((e)=>e?.toMap()),
-                [NoticeDtoFields.processedAPTAnnouncementByHouseType]  : processedByHouseType?.toMap() ?? null
-            });
-
-            //#. 결과 리턴
-            return new NoticeDocumentResult({
-                noticeId : noticeId,
-                isSuccess : true,
-                isGenerated : !doc.exists,
-                isUpdated : doc.exists,
-                isByHouseTypeInfoSuccess : !infoByHouseTypeList.includes(null),
-                isProcessedAPTAnnouncementByHouseTypeSuccess : processedByHouseType != null ? true : false,
-                isProcessedAPTAnnouncementByHouseTypeHasCountError : processedByHouseType?.hasSupplyHouseholdsCountError ?? false
-            });
-
-        }catch(e){
-            logger.error(`[NoticeService.makeNoticeDocument()] ${e}\n`);
-            return new NoticeDocumentResult({
-                noticeId : noticeId,
-                isSuccess : false,
-                isGenerated : false,
-                isUpdated : false,
-                isByHouseTypeInfoSuccess : false,
-                isProcessedAPTAnnouncementByHouseTypeSuccess : false,
-                isProcessedAPTAnnouncementByHouseTypeHasCountError : false,
-                error : e
-            });
-        }
-        
-    }
-
     private checkIsDocumentNotFoundError(e : any) : boolean{
         if (e instanceof Error && 'code' in e && (e as any).code === 5) {
             return true;
         } 
         else{
             return false;
-        }
-    }
-
-    //TODO utills로 옮겨야 할 수도
-    //TODO 공고 날짜가 없는 경우 어떻게 처리할지 - 현재 timestamp = 0으로 처리하는건 별로인듯
-    private convertStringToTimestamp(dateString: string): Timestamp {
-        try {
-
-          // 날짜 문자열이 올바른 형식인지 확인
-          const dateParts = dateString.split('-');
-          if (dateParts.length !== 3) {
-            throw new Error('Invalid date format. Expected format: YYYY-MM-DD');
-          }
-      
-          const year = parseInt(dateParts[0], 10);
-          const month = parseInt(dateParts[1], 10) - 1;
-          const day = parseInt(dateParts[2], 10);
-      
-          // 유효한 날짜인지 확인
-          if (isNaN(year) || isNaN(month) || isNaN(day)) {
-            throw new Error('Invalid date components. Ensure the date string is in the correct format: YYYY-MM-DD');
-          }
-      
-          const date = new Date(year, month, day);
-      
-          if (isNaN(date.getTime())) {
-            throw new Error('Invalid date. Unable to create a valid Date object.');
-          }
-      
-          return Timestamp.fromDate(date);
-        } catch (error) {
-          console.error('Error converting string to Timestamp:', error);
-          // 유효하지 않은 경우 Timestamp 0 반환
-          return Timestamp.fromDate(new Date(0));
         }
     }
 
@@ -288,110 +87,206 @@ export class NoticeService{
         });   
     }
 
+
+    //#region #. 공고 문서 생성
+
     /**
-     * 청약홈 API에서 주택형별 APT 분양 상세정보를 가져옵니다.
-     * @param houseNumber 주택관리번호
-     * @param announcementNumber 공고번호
+     * 공고 문서를 생성하는 함수
+     * 
+     * @param noticeCollection - 파이어베이스 컬렉션 참조
+     * @param aptAnnouncement - APT 분양 공고 객체 (null일 수 있음)
+     * 
+     * @returns 문서 생성 결과 객체 배열을 반환
+     * 
+     * - aptAnnouncement가 null이면 오류를 반환
+     * - 주택 유형별 세부 정보를 가져온 후, 이를 가공하여 문서를 작성
+     * - 파이어베이스에 문서를 저장하고 성공 여부를 반환
+     * - 오류가 발생할 경우, 문서 생성 실패 결과를 반환
      */
-    async getAptAnnouncementByHouseType(
-        houseNumber : string,
-        announcementNumber : string
-    ) : Promise<AptAnnouncementByHouseType | null>{
-        try {
-            const url = `https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancMdl?` +
-                        `page=1&` +
-                        `perPage=1&` +
-                        `cond%5BHOUSE_MANAGE_NO%3A%3AEQ%5D=${houseNumber}&` +
-                        `cond%5BPBLANC_NO%3A%3AEQ%5D=${announcementNumber}&`+
-                        `serviceKey=${applyhomeInfoDetailServiceKey}`;                        
+    private async makeNoticeDocumentByAnnouncement(
+        noticeCollection : CollectionReference, 
+        aptAnnouncement : APTAnnouncement | null
+    ) : Promise<NoticeDocumentResult>{
 
-            const response = await axios.get(url);
+        //#. aptAnnouncement가 null이면 반환
+        if(aptAnnouncement === null){
+            return NoticeDocumentResult.fromAllFailure({
+                noticeId : null,
+                error : Error("[ApplyHomeApiService.makeNoticeDocument()] aptAnnouncement 가 null 임")
+            });
+        }
 
-            //#. 상태 코드가 200이 아닌 경우
-            if(response.status != 200){
-                logger.error(`[NoticeService.getAptAnnouncementByHouseType()] 청약홈 API와 통신 불가 : ${response.status} , ${response.data}`);
-                return null;
-            }
+        //#. 문서가 있는지 확인
+        const noticeId : string = aptAnnouncement.publicAnnouncementNumber;     
+        const doc = await noticeCollection.doc(noticeId).get();
+        const isDocExist = doc.exists;
 
-            const data = response.data.data;
 
-            //#. 가져온 데이터의 개수가 1보다 작은경우
-            if(data['currentCount'] < 1){
-                logger.error(`[NoticeService.getAptAnnouncementByHouseType()] 결과가 1보다 작음 : ${data}`);
-                return null;
-            }
+        //#1. 주택 유형별 세부정보 가져오기
+        let infoByHouseTypeList : Array<AptAnnouncementByHouseType | null> | null = null;
 
-            //#. 파싱
-            try{
-                return AptAnnouncementByHouseType.fromMap(data[0]);
-            }catch(e){
-                //#. 파싱 실패한 경우
-                logger.error(`[NoticeService.getAptAnnouncementByHouseType()] AptAnnouncementByHouseType 파싱 오류 : ${e}`);
-                logger.error(`[NoticeService.getAptAnnouncementByHouseType()] AptAnnouncementByHouseType 응답 : ${data}`);
-                return null;
-            }     
+        try{
+            infoByHouseTypeList  = await this.applyHomeApiService.getAptAnnouncementByHouseTypeList(
+                aptAnnouncement.houseManageNumber,
+                aptAnnouncement.publicAnnouncementNumber,
+            );
+        }catch(e){
+            //#. 주택 유형별 세부정보를 가져오지 못했으면 데이터 없이 문서 만들기 진행
+            logger.error(`[ApplyHomeApiService.makeNoticeDocument()] 주택 유형별 세부정보 가져오기 중 오류\n${e}`);
+        }
 
-        } catch (error) {
-            logger.error('[NoticeService.getAptAnnouncementByHouseType()] Unexpected error:', error);
-            return null;
-        }  
-    }
+        //#2. 주택 유형별 정보 가공 데이터 제작
+        let processedByHouseType : ProcessedAPTAnnouncementByHouseType | null;
 
-      /**
-     * 청약홈 API에서 주택형별 APT 분양 상세정보를 가져옵니다.
-     * @param houseNumber 주택관리번호
-     * @param announcementNumber 공고번호
+        if(!infoByHouseTypeList?.includes(null)){ //#. 유형별 정보 리스트에  null 이 없으면 제작
+            processedByHouseType = ProcessedAPTAnnouncementByHouseType.fromData({
+                announcementByHouseTypeList : infoByHouseTypeList as AptAnnouncementByHouseType[],
+                totalSupplyHouseholdCount : aptAnnouncement.totalSupplyHouseholdCount
+            });
+        }
+        else{ //#. 있으면 null
+            processedByHouseType = null;
+        }
+
+        //#3. 파이어베이스에 업로드       
+        try{
+            await noticeCollection.doc(noticeId).set({
+                [NoticeDtoFields.noticeId] : noticeId,
+                [NoticeDtoFields.views] : 0,  //#. 조회수
+                [NoticeDtoFields.likes] : 0,  //#. 좋아요
+                [NoticeDtoFields.scraps] : 0, //#. 스크랩 수
+                [NoticeDtoFields.houseName] : aptAnnouncement.houseName, //#. 아파트 이름
+                [NoticeDtoFields.applicationReceptionStartDate] : aptAnnouncement.applicationReceptionStartDate,
+                [NoticeDtoFields.recruitmentPublicAnnouncementDate] : aptAnnouncement.recruitmentPublicAnnouncementDate,
+                [NoticeDtoFields.info] : aptAnnouncement.toMapWithNull(), //#. 공고
+                [NoticeDtoFields.aptAnnouncementByTypeList] : infoByHouseTypeList?.map((e)=>e?.toMap()),
+                [NoticeDtoFields.processedAPTAnnouncementByHouseType]  : processedByHouseType?.toMap() ?? null
+            });
+
+            //#. 결과 리턴
+            return new NoticeDocumentResult({
+                noticeId : noticeId,
+                isSuccess : true,
+                isGenerated : !isDocExist,
+                isUpdated : isDocExist,
+                isByHouseTypeInfoSuccess : !infoByHouseTypeList?.includes(null),
+                isProcessedAPTAnnouncementByHouseTypeSuccess : processedByHouseType != null ? true : false,
+                isProcessedAPTAnnouncementByHouseTypeHasCountError : processedByHouseType?.hasSupplyHouseholdsCountError ?? false
+            });
+
+        }catch(e){
+            logger.error(`[NoticeService.makeNoticeDocument()] ${e}\n`);
+            return NoticeDocumentResult.fromAllFailure({
+                noticeId : noticeId,
+                error : e
+            });
+        }
+        
+    } 
+
+
+    /**
+     *  2개월 전부터의 공고 문서를 생성하는 함수
+     * 
+     * @returns 공고 생성 결과에 대한 로그 메시지를 반환
+     * 
+     * - 현재로부터 두 달 전의 공고 데이터를 가져와서 각각 문서를 생성
+     * - 각 공고에 대해 문서를 만들고, 결과를 수집한 후 로그를 생성하여 반환
      */
-      async getAptAnnouncementByHouseTypeList(
-        houseNumber : string,
-        announcementNumber : string
-    ) : Promise<Array<AptAnnouncementByHouseType | null>>{ //TODO 오류시 배열을 반환할지 null 을 반환할지 생각하기
-        try {
-            let result : (AptAnnouncementByHouseType | null)[] = [];
+    async makeNoticeDocuments(){        
+        const noticeCollection = NoticeReferences.getNoticeCollection();
+        
+        //#1. 공고 가져오기
+        //#. 현재로부터 두달전의 공고부터 가져옴
+        const currentDate = new Date();
+        currentDate.setMonth(currentDate.getMonth() - 2);
+        
+        let aptAnnouncementList : Array<APTAnnouncement  | null>;
 
-            const url = `https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancMdl?` +
-                        `page=1&` +
-                        `perPage=100&` +
-                        `cond%5BHOUSE_MANAGE_NO%3A%3AEQ%5D=${houseNumber}&` +
-                        `cond%5BPBLANC_NO%3A%3AEQ%5D=${announcementNumber}&`+
-                        `serviceKey=${applyhomeInfoDetailServiceKey}`;                        
-
-            const response = await axios.get(url);
-
-            //#. 상태 코드가 200이 아닌 경우
-            if(response.status != 200){
-                logger.error(`[NoticeService.getAptAnnouncementByHouseType()] 청약홈 API와 통신 불가 : ${response.status} , ${response.data}`);
-                return result;
-            }
-
-            const data = response.data.data;
-
-            //#. 가져온 데이터의 개수가 1보다 작은경우
-            if(data['currentCount'] < 1){
-                logger.error(`[NoticeService.getAptAnnouncementByHouseType()] 결과가 1보다 작음 : ${data}`);
-                return result;
-            }
-
-
-            await Promise.all<NoticeDocumentResult>(data.map(async (item: any) => {
-                 //#. 파싱
-                try{
-                    result.push(AptAnnouncementByHouseType.fromMap(item));  
-                }catch(e){
-                    //#. 파싱 실패한 경우
-                    logger.error(`[NoticeService.getAptAnnouncementByHouseType()] AptAnnouncementByHouseType 파싱 오류 : ${e}`);
-                    logger.error(`[NoticeService.getAptAnnouncementByHouseType()] AptAnnouncementByHouseType 응답 : ${data}`);
-                    result.push(null);
-                }   
-                
-            }))           
+        try{
+            aptAnnouncementList  = await this.applyHomeApiService.getAPTAnnouncementList(currentDate); 
+        }catch(e){
+            //TODO 로깅
+            throw e;
+        }
        
-            return result;             
+        //#2. 가져온 공고마다 문서 만들기        
+        const result : Array<NoticeDocumentResult> = await Promise.all<NoticeDocumentResult>(aptAnnouncementList.map((aptAnnouncement)=>
+            this.makeNoticeDocumentByAnnouncement(noticeCollection , aptAnnouncement)
+        ));
 
-        } catch (error) {
-            logger.error('[NoticeService.getAptAnnouncementByHouseType()] Unexpected error:', error);
-            return [];
-        }  
+        //#3. 결과 로그 생성
+        const resultLog = this.makeNoticeUpdateLog(
+            result,
+            aptAnnouncementList.length,
+            currentDate.toISOString().split('T')[0]
+        )
+
+        logger.log(`[ApplyHomeApiService.makeNoticeDocuments()]\n${resultLog}`);    
+
+        return resultLog;
     }
 
+
+    /**
+     * 공고 생성 결과 로그를 생성하는 함수
+     * 
+     * @param result - 각 공고 문서 생성에 대한 결과 리스트
+     * @param totalCount - 총 공고 개수
+     * @param startDateString - 공고 조회 시작 날짜 (포맷: YYYY-MM-DD)
+     * 
+     * @returns 업데이트 로그 객체 반환
+     * 
+     * - 실패한 공고 수, 추가된 문서 수, 업데이트된 문서 수 등 각종 통계 정보를 기반으로 로그를 생성
+     */
+    private makeNoticeUpdateLog(
+        result : Array<NoticeDocumentResult> , 
+        totalCount : number,
+        startDateString : string
+    ){
+        let failure = 0;
+        let generated = 0;
+        let updated =  0;
+        let byHouseTypeSuccess =  0;
+        let isProcessedAPTAnnouncementByHouseTypeSuccess =  0;
+        let isProcessedAPTAnnouncementByHouseTypeHasCountError =  0;
+
+        result.map(e =>{
+            if(!e.isSuccess){
+                failure++;
+            }
+
+            if(e.isGenerated){
+                generated++;
+            }
+
+            if(e.isUpdated){
+                updated++;
+            }
+
+            if(e.isByHouseTypeInfoSuccess){
+                byHouseTypeSuccess++;
+            }
+
+            if(e.isProcessedAPTAnnouncementByHouseTypeSuccess){
+                isProcessedAPTAnnouncementByHouseTypeSuccess++;
+            }
+
+            if(e.isProcessedAPTAnnouncementByHouseTypeHasCountError){
+                isProcessedAPTAnnouncementByHouseTypeHasCountError++;
+            }
+        });
+        
+        return {
+            range: `~${startDateString}`,
+            addedDocuments: `${generated} / ${totalCount}`,
+            successRate: `${totalCount - failure} / ${totalCount}`,
+            updatedDocuments: `${updated} / ${totalCount}`,
+            byHouseTypeSuccessRate: `${byHouseTypeSuccess} / ${totalCount}`,
+            processedSuccessRate: `${isProcessedAPTAnnouncementByHouseTypeSuccess} / ${totalCount}`,
+            priceErrorRate: `${isProcessedAPTAnnouncementByHouseTypeHasCountError} / ${totalCount}`
+        };
+    }
+
+    //#endregion
 }
