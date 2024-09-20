@@ -112,7 +112,7 @@ export class NoticeService{
         if(aptAnnouncement === null){
             return NoticeDocumentResult.fromAllFailure({
                 noticeId : null,
-                error : Error("[ApplyHomeApiService.makeNoticeDocument()] aptAnnouncement 가 null 임")
+                error : Error("[NoticeService.makeNoticeDocument()] aptAnnouncement 가 null 임")
             });
         }
 
@@ -132,7 +132,7 @@ export class NoticeService{
             );
         }catch(e){
             //#. 주택 유형별 세부정보를 가져오지 못했으면 데이터 없이 문서 만들기 진행
-            logger.error(`[ApplyHomeApiService.makeNoticeDocument()] 주택 유형별 세부정보 가져오기 중 오류\n${e}`);
+            logger.error(`[NoticeService.makeNoticeDocument()] 주택 유형별 세부정보 가져오기 중 오류\n${e}`);
         }
 
         //#2. 주택 유형별 정보 가공 데이터 제작
@@ -186,7 +186,7 @@ export class NoticeService{
 
 
     /**
-     *  2개월 전부터의 공고 문서를 생성하는 함수
+     *  청약홈 분양정보 조회 서비스 API 에서 2개월 전부터의 공고를 가져와 문서를 생성하는 함수
      * 
      * @returns 공고 생성 결과에 대한 로그 메시지를 반환
      * 
@@ -206,7 +206,8 @@ export class NoticeService{
         try{
             aptAnnouncementList  = await this.applyHomeApiService.getAPTAnnouncementList(currentDate); 
         }catch(e){
-            //TODO 로깅
+            //#. 분양 정보를 가져오지 못했으면 종료
+            logger.error(`[NoticeService.makeNoticeDocuments()] APT 분양정보 상세조회 가져오기 중 오류\n${e}`);
             throw e;
         }
        
@@ -222,7 +223,7 @@ export class NoticeService{
             currentDate.toISOString().split('T')[0]
         )
 
-        logger.log(`[ApplyHomeApiService.makeNoticeDocuments()]\n${JSON.stringify(resultLog)}`);    
+        logger.log(`[NoticeService.makeNoticeDocuments()]\n${JSON.stringify(resultLog)}`);    
 
         return resultLog;
     }
