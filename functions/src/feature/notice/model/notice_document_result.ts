@@ -1,5 +1,5 @@
 export class NoticeDocumentResult{
-    noticeId : string;
+    noticeId : string | null;
     isSuccess : boolean;
     isGenerated : boolean;
     isUpdated : boolean;
@@ -20,7 +20,7 @@ export class NoticeDocumentResult{
             error 
         } : 
         { 
-            noticeId: string, 
+            noticeId: string | null, 
             isSuccess: boolean,
             isGenerated : boolean, 
             isUpdated : boolean , 
@@ -38,5 +38,18 @@ export class NoticeDocumentResult{
         this.isProcessedAPTAnnouncementByHouseTypeSuccess = isProcessedAPTAnnouncementByHouseTypeSuccess;
         this.isProcessedAPTAnnouncementByHouseTypeHasCountError = isProcessedAPTAnnouncementByHouseTypeHasCountError;
         this.error = error;
+    }
+
+    static fromAllFailure(data : {noticeId : string | null , error : any}){
+        return new NoticeDocumentResult({
+            noticeId : data.noticeId,
+            isSuccess : false,
+            isGenerated : false,
+            isUpdated : false,
+            isByHouseTypeInfoSuccess : false,
+            isProcessedAPTAnnouncementByHouseTypeSuccess : false,
+            isProcessedAPTAnnouncementByHouseTypeHasCountError : false,
+            error : data.error
+        });  
     }
 }
