@@ -1,4 +1,5 @@
 import { Timestamp } from "firebase-admin/firestore";
+import { logger } from "firebase-functions/v1";
 
 export class TimeFormatter{
     static datStringToDateTime(dateString: string): Timestamp {
@@ -58,7 +59,52 @@ export class TimeFormatter{
                 return undefined;
             }
         }{
-            return TimeFormatter.sleshStringToFirebaseTimestamp(dateString);
+            try{
+                return TimeFormatter.sleshStringToFirebaseTimestamp(dateString);
+            }catch(e){
+                logger.error(`[Timeformatter.trySleshStringToFirebaseTimestamp()] $e`);
+                return null;
+            }
         }
     }
+
+      /**
+     * YYYYMMDD 형식의 문자열을 Firebase Timestamp로 변환하는 함수
+     * @param dateStr - 'YYYYMMDD' 형식의 날짜 문자열
+     * @returns Firebase Timestamp | null
+     */
+     static stringToFirebaseTimestamp(dateString: string): Timestamp | null {
+        const year = parseInt(dateString.substring(0, 4), 10);
+        const month = parseInt(dateString.substring(4, 6), 10) - 1; // 월은 0부터 시작
+        const day = parseInt(dateString.substring(6, 8), 10);
+
+        const date = new Date(year, month, day);
+
+        return Timestamp.fromDate(date);
+    }
+
+ 
+      /**
+     * YYYYMMDD 형식의 문자열을 Firebase Timestamp로 변환하는 함수
+     * @param dateStr - 'YYYYMMDD' 형식의 날짜 문자열 | null | undefined
+     * @returns Firebase Timestamp | null | undefined
+     */
+    static tryStringToFirebaseTimestamp(dateString: string | null | undefined) : Timestamp | null | undefined{
+        if(dateString == null){
+            if(dateString === null){
+                return null;
+            }
+            else{
+                return undefined;
+            }
+        }{
+            try{
+                return TimeFormatter.stringToFirebaseTimestamp(dateString);
+            }catch(e){
+                logger.error(`[Timeformatter.tryStringToFirebaseTimestamp()] $e`);
+                return null;
+            }
+        }
+    }
+
 }
