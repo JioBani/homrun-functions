@@ -9,5 +9,5 @@ export const NoticeDtoFields = {
     applicationReceptionStartDate : "applicationReceptionStartDate", /// 청약 접수 시작일
     recruitmentPublicAnnouncementDate : "recruitmentPublicAnnouncementDate", /// 모집 공고일
     aptAnnouncementByTypeList : "aptAnnouncementByTypeList", //#. 유형별 세부 정보
-    processedAPTAnnouncementByHouseType : "processedAPTAnnouncementByHouseType" //#. 유형별 세부 정보 가공본
+    supplyMethod : "supplyMethod",
 };

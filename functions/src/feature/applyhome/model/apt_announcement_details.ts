@@ -1,10 +1,13 @@
-import { AptAnnouncementByHouseTypeField } from "./apt_announcement_by_house_type.field";
+import { AptBasicInfo, AptDetailsInfo } from "./apt.model";
+import { AptAnnouncementByHouseTypeField } from "../value/apt_announcement_by_house_type.field";
+import { AptDetailsInfoFactory } from "../factory/apply_heme.factory";
+import { ApplyHomeApiUrls } from "../value/apply_home_api_urls";
 
 /**
  * 주택형별 분양정보를 나타내는 클래스.
  * 각 필드는 API 응답에 맞게 타입이 정의되며, null 가능성도 반영됩니다.
  */
-export class AptAnnouncementByHouseType {
+export class AptAnnouncementDetails implements AptDetailsInfo{
     /**
      * 주택 관리 번호 (주택관리번호).
      */
@@ -88,7 +91,7 @@ export class AptAnnouncementByHouseType {
     /**
      * 공급 금액 (분양최고금액) (단위: 만원).
      */
-    highestSupplyPrice: string | null;
+    topAmount: number | null;
 
     
 
@@ -109,7 +112,7 @@ export class AptAnnouncementByHouseType {
         relocatedInstitutionHouseholds: number | null,
         youthHouseholds: number | null,
         newbornHouseholds: number | null,
-        highestSupplyPrice: string | null
+        topAmount: number | null
     ) {
         this.houseManageNumber = houseManageNumber;
         this.publicNoticeNumber = publicNoticeNumber;
@@ -127,7 +130,7 @@ export class AptAnnouncementByHouseType {
         this.relocatedInstitutionHouseholds = relocatedInstitutionHouseholds;
         this.youthHouseholds = youthHouseholds;
         this.newbornHouseholds = newbornHouseholds;
-        this.highestSupplyPrice = highestSupplyPrice;
+        this.topAmount = topAmount;
     }
 
     
@@ -136,8 +139,8 @@ export class AptAnnouncementByHouseType {
      * @param map 객체로부터 데이터를 읽어와서 AptAnnouncementByHouseType 인스턴스를 생성합니다.
      * @returns AptAnnouncementByHouseType 인스턴스
      */
-    static fromMap(map: { [key: string]: any }): AptAnnouncementByHouseType {
-        return new AptAnnouncementByHouseType(
+    static fromMap(map: { [key: string]: any }): AptAnnouncementDetails {
+        return new AptAnnouncementDetails(
             map[AptAnnouncementByHouseTypeField.houseManageNumber] ?? null,
             map[AptAnnouncementByHouseTypeField.publicNoticeNumber] ?? null,
             map[AptAnnouncementByHouseTypeField.modelNumber] ?? null,
@@ -154,7 +157,7 @@ export class AptAnnouncementByHouseType {
             map[AptAnnouncementByHouseTypeField.relocatedInstitutionHouseholds] ?? null,
             map[AptAnnouncementByHouseTypeField.youthHouseholds] ?? null,
             map[AptAnnouncementByHouseTypeField.newbornHouseholds] ?? null,
-            map[AptAnnouncementByHouseTypeField.highestSupplyPrice] ?? null
+            map[AptAnnouncementByHouseTypeField.topAmount] ?? null
         );
     }
 
@@ -181,7 +184,17 @@ export class AptAnnouncementByHouseType {
             relocatedInstitutionHouseholds: this.relocatedInstitutionHouseholds,
             youthHouseholds: this.youthHouseholds,
             newbornHouseholds: this.newbornHouseholds,
-            highestSupplyPrice: this.highestSupplyPrice,
+            highestSupplyPrice: this.topAmount,
         };
+    }
+}
+
+export class AptAnnouncementDetailsFactory implements AptDetailsInfoFactory<AptAnnouncementDetails>{
+    fromMap(map: { [key: string]: any; }): AptAnnouncementDetails {
+        return AptAnnouncementDetails.fromMap(map);
+    }    
+
+    getApiUrl(basicInfo: AptBasicInfo): string {
+        return ApplyHomeApiUrls.getAptAnnouncementDetails(basicInfo);
     }
 }

@@ -85,6 +85,6 @@ export const AptAnnouncementByHouseTypeField = {
     /**
      * 공급 금액 (분양최고금액) (단위: 만원).
      */
-    highestSupplyPrice: "LTTOT_TOP_AMOUNT"
+    topAmount: "LTTOT_TOP_AMOUNT"
 };    
   

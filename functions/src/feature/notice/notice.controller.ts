@@ -50,17 +50,6 @@ export class NoticeController{
         });
       });
       
-      makeNoticeDocuments(){
-        return this.noticeService.makeNoticeDocuments()
-      };
-
-      makeNoticeDocumentForce = withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
-        const result = await this.makeNoticeDocuments();
-        return new ApiResponse({
-          status: 200,
-          data: result
-        });
-      });
       
       updateNoticeScrapCount = withAuthHandler(async (request: Request, response: Response, decodedIdToken: DecodedIdToken): Promise<ApiResponse> => {
         const { noticeId, up} = request.body;
@@ -93,4 +82,20 @@ export class NoticeController{
             data: result
         });
     });
+
+    updateAptInfo = withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
+      const result = await this.noticeService.updateAptInfo();
+      return new ApiResponse({
+        status: 200,
+        data: result
+      });
+    });
+
+    // updateUnrankedRemainDocument = withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
+    //   const result = await this.noticeService.updateUrankedRemainDocument();
+    //   return new ApiResponse({
+    //     status: 200,
+    //     data: result
+    //   });
+    // });
 }

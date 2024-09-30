@@ -1,13 +1,158 @@
-import { APTAnnouncement } from "../../model/apply_home_info/apt_announcement";
-import { AptAnnouncementByHouseType } from "../../model/apply_home_info/apt_announcement_by_house_type";
-import { applyhomeInfoDetailServiceKey } from "../../sucure/apply_home_info_detail.service_key";
+import { APTAnnouncement, APTAnnouncementFactory } from "./model/apt_announcement";
+import { AptAnnouncementDetails, AptAnnouncementDetailsFactory } from "./model/apt_announcement_details";
 import axios from "axios";
-import { logger } from "firebase-functions/v1";
+import { APTUnrankedRemain, APTUnrankedRemainFactory } from "./model/apt_unranked_remain";
+import { APTOptionalSupply, APTOptionalSupplyFactory } from "./model/apt_optional_supply";
+import { APTUnrankedRemainDetails, APTUnrankedRemainDetailByTypeFactory } from "./model/apt_unranked_remain_details";
+import { APTOptionalSupplyDetails, APTOptionalSupplyDetailsFactory } from "./model/apt_optional_supply_details";
+import { Result } from "../../common/result";
+import { ParsingEntity } from "../../common/parsing_result";
+import { AptBasicInfo, AptDetailsInfo, APTInfo } from "./model/apt.model";
+import { AptBasicInfoFactory, AptDetailsInfoFactory, AptFactory } from "./factory/apply_heme.factory";
+import { ApplyHomeDto } from "./model/apply_home.dto";
+import { SupplyMethod } from "./value/supply_method.enum";
+import { ApplyHomeFetchResult } from "./common/apply_home_fetch_result";
+import { ApplyHomeResult } from "./common/apply_home_result";
+import { ApplyHomeResultStatistics } from "./common/apply_home_result_statistics";
 
-//TODO 오류 클래스화 하기
 export class ApplyHommeApiService{
 
-   /**
+    announcementFactory = new APTAnnouncementFactory();
+    announcementDetailsFactory = new AptAnnouncementDetailsFactory();
+
+    unrankedRemainFactory = new APTUnrankedRemainFactory();
+    unrankedRemainDetailsFactory = new APTUnrankedRemainDetailByTypeFactory();
+
+    optionalSupplyFactory = new APTOptionalSupplyFactory();
+    optionalSupplyDetailsFactory = new APTOptionalSupplyDetailsFactory();   
+
+
+    //#. 일반 아파트 정보
+    async getAptAnnouncementInfo(currentDate : Date) : Promise<ApplyHomeResult>{
+        return this.getAptInfo(
+            SupplyMethod.General,
+            this.announcementFactory,
+            this.announcementDetailsFactory,
+            currentDate
+        );
+    }
+    
+    //#. 무순위/잔여세대 정보
+    async getUrankedRemainInfo(currentDate : Date) : Promise<ApplyHomeResult>{
+        return this.getAptInfo(
+            SupplyMethod.UnrankedRemain,
+            this.unrankedRemainFactory,
+            this.unrankedRemainDetailsFactory,
+            currentDate
+        );
+    }
+
+    //#. 임의 공급 정보
+    async getAPTOptionalSupplyInfo(currentDate : Date) : Promise<ApplyHomeResult>{
+        return this.getAptInfo(
+            SupplyMethod.General,
+            this.optionalSupplyFactory,
+            this.optionalSupplyDetailsFactory,
+            currentDate
+        );
+    }       
+
+
+    //#. url 위치의 API에서 정보를 가져와 객체로 반환
+    async getApiData<T extends APTInfo>(factory : AptFactory<APTInfo>, url : string) : Promise<Result<ParsingEntity<T>[]>>{
+        return Result.executeAsync<ParsingEntity<T>[]>(async ()=>{
+
+            const response = await axios.get(url);
+            
+            //#. 상태 코드가 200이 아닌 경우
+            if(response.status != 200){
+                throw new Error(`청약홈 API 통신 오류: 상태 코드 ${response.status}`);
+            }
+    
+            //#. 가져온 데이터가 배열이 아닌 경우
+            if (!Array.isArray(response.data.data)) {
+                throw  new Error(`청약홈 API 데이터 오류: data가 Array가 아님 ${response.data.data}`);
+            }     
+            
+            const list : ParsingEntity<T>[] = response.data.data.map((item : any)=>{
+                return ParsingEntity.fromParsing(
+                    ()=>factory.fromMap(item)
+                );
+            });
+
+            return list;
+        });
+    }   
+
+    //#. 공급 방식에 따라 API에서 정보를 가져와 ApplyHomeResult로 반환
+    async getAptInfo(
+        supplyMethod : SupplyMethod,
+        basicfactory : AptBasicInfoFactory<AptBasicInfo>,
+        detailsFactory : AptDetailsInfoFactory<AptDetailsInfo>,
+        startDate : Date
+    ) : Promise<ApplyHomeResult>{
+        try{            
+            //#. 기본정보 가져오기
+            const basicInfo  : Result<ParsingEntity<AptBasicInfo>[]> = await this.getApiData(
+                basicfactory,
+                basicfactory.getApiUrl(startDate),
+            ); 
+
+            //#. 기본정보를 가져오는데에 실패했을 경우
+            if(!basicInfo.isSuccess){
+                return new ApplyHomeResult({
+                    name : "",
+                    data : null,
+                    startDate : startDate,
+                    statistics : new ApplyHomeResultStatistics(
+                        supplyMethod,
+                        ApplyHomeFetchResult.fromFailure("root" , basicInfo.error)
+                    )
+                });
+            }
+
+            //#. 상세정보 가져오기                 
+            const unrankRemainMap : Map<
+                ParsingEntity<AptBasicInfo> , 
+                Result<ParsingEntity<AptDetailsInfo>[]> | null
+            > = new Map();     
+            
+            //#. DTO 만들기
+            const dtoList : ApplyHomeDto[] = [];
+        
+            for (const item of basicInfo.data!) {
+                if (item.data != null) {
+                    const detailsResult = await this.getApiData<AptDetailsInfo>(
+                        detailsFactory,
+                        detailsFactory.getApiUrl(item.data),
+                    );
+                    unrankRemainMap.set(item, detailsResult);
+                    dtoList.push(new ApplyHomeDto(
+                        item.data!, 
+                        detailsResult.data?.map(e=>e.data) ?? null
+                    ));
+                } else {
+                    unrankRemainMap.set(item, null);
+                }
+            }
+                        
+            //#. fetchResult 만들기
+            const fetchResult = ApplyHomeFetchResult.fromResult(Result.success(unrankRemainMap));
+
+            return new ApplyHomeResult({
+                name : "",
+                data : dtoList,
+                startDate : startDate,
+                statistics : new ApplyHomeResultStatistics(supplyMethod,fetchResult)
+            });
+        }catch(e){
+            console.error(`[getAptInfo] ${e}`);
+            throw e;
+        }
+        
+    }
+
+    /**
      * 	청약홈 분양정보 조회 서비스 API의 [APT 분양정보 상세조회] 로부터 APTAnnouncement : null 객체의 배열을 가져옵니다.
      *
      * 참고: API 응답 데이터의 개별 항목 처리 중 오류가 발생한 경우, 해당 항목에 대해서는 `null`이 반환됩니다.
@@ -17,38 +162,11 @@ export class ApplyHommeApiService{
      * @returns {Promise<Array<APTAnnouncement | null>>} APTAnnouncement 객체 배열 또는 항목 처리 중 오류가 발생한 경우 `null`이 포함된 배열을 반환합니다.
      * 
      */
-    async getAPTAnnouncementList(startDate: Date): Promise<Array<APTAnnouncement | null>> {
-        //#. 현재 시간에서 fromDate만큼 이전의 데이터부터 가져옴
-
-        const url = `https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail?` +
-                    `page=1&` +
-                    `perPage=500&` +
-                    `cond%5BRCRIT_PBLANC_DE%3A%3AGTE%5D=${startDate.toISOString().split('T')[0]}&` +
-                    `serviceKey=${applyhomeInfoDetailServiceKey}`;
-
-        const response = await axios.get(url);
-
-        //#. 상태 코드가 200이 아닌 경우
-        if(response.status != 200){
-            logger.error(`[ApplyHomeApiService.getAPTAnnouncementList()] 청약홈 API와 통신 불가 : ${response.status} , ${response.data}`);
-            throw new Error(`청약홈 API 통신 오류: 상태 코드 ${response.status}`);
-        }
-
-        //#. 가져온 데이터가 배열이 아닌 경우
-        if (!Array.isArray(response.data.data)) {
-            logger.error(`[ApplyHomeApiService.getAPTAnnouncementList()] data가 Array가 아님 ${response.data.data}`);
-            throw new Error(`청약홈 API 데이터 오류: data가 Array가 아님 ${response.data.data}`);
-        }        
-
-        //#. APTAnnouncement 배열로 만들어서 반환
-        return response.data.data.map((item: any) => {
-            try {
-                return APTAnnouncement.fromMap(item);
-            } catch (e) {
-                logger.error(`[ApplyHomeApiService.getAPTAnnouncementList()] ${e}`);
-                return null;
-            }
-        });
+    async getAPTAnnouncementList(startDate: Date): Promise<Result<ParsingEntity<APTAnnouncement>[]>> {
+        return this.getApiData(
+            this.announcementFactory,
+            this.announcementFactory.getApiUrl(startDate),
+        ); 
     }
 
     
@@ -58,45 +176,52 @@ export class ApplyHommeApiService{
      * @param announcementNumber 공고번호
      */
     async getAptAnnouncementByHouseTypeList(
-        houseNumber : string,
-        announcementNumber : string
-    ) : Promise<Array<AptAnnouncementByHouseType | null>>{
-        const url = `https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancMdl?` +
-                        `page=1&` +
-                        `perPage=1&` +
-                        `cond%5BHOUSE_MANAGE_NO%3A%3AEQ%5D=${houseNumber}&` +
-                        `cond%5BPBLANC_NO%3A%3AEQ%5D=${announcementNumber}&`+
-                        `serviceKey=${applyhomeInfoDetailServiceKey}`;                        
-
-        const response = await axios.get(url);
-
-        //#. 상태 코드가 200이 아닌 경우
-        if(response.status != 200){
-            logger.error(`[ApplyHomeApiService.getAptAnnouncementByHouseType()] 청약홈 API와 통신 불가 : ${response.status} , ${response.data}`);
-            throw new Error(`청약홈 API 통신 오류: 상태 코드 ${response.status}`);
-        }
-
-        //#. 가져온 데이터의 개수가 1보다 작은경우
-        if(response.data.currentCount < 1){
-            logger.error(`[ApplyHomeApiService.getAptAnnouncementByHouseType()] 결과가 1보다 작음 : ${response.data}`);
-            throw new Error(`청약홈 API 데이터 오류 : 결과가 1보다 작음 ${response.data}`);
-        }
-
-         //#. 가져온 데이터가 배열이 아닌 경우
-        if (!Array.isArray(response.data.data)) {
-            logger.error(`[ApplyHomeApiService.getAptAnnouncementByHouseType()] data가 Array가 아님 ${response.data.data}`);
-            throw new Error(`청약홈 API 데이터 오류: data가 Array가 아님 ${response.data.data}`);
-        }
-
-        return response.data.data.map((item : any) => {
-            try{
-                return AptAnnouncementByHouseType.fromMap(item);
-            }catch(e){
-                //#. 파싱 실패한 경우
-                logger.error(`[ApplyHomeApiService.getAptAnnouncementByHouseType()] AptAnnouncementByHouseType 파싱 오류 : ${e}\n${item}`);
-                return null;
-            } 
-        });
+        announcement : APTAnnouncement
+    ) : Promise<Result<ParsingEntity<AptAnnouncementDetails>[]>> {
+        return this.getApiData(
+            this.announcementDetailsFactory,
+            this.announcementDetailsFactory.getApiUrl(announcement),
+        ); 
     }
-   
+
+    
+    //#. 무순위/잔여세대 정보
+    async getAPTUnrankedRemainList(startDate: Date) : Promise<Result<ParsingEntity<APTUnrankedRemain>[]>>{    
+        return this.getApiData<APTUnrankedRemain>(
+            this.unrankedRemainFactory,
+            this.unrankedRemainFactory.getApiUrl(startDate),
+        ); 
+     }
+
+    //#. 주택형별 무순위/잔여세대 상세정보
+    async getAPTUnrankedRemainDetailByTypeList(
+        aPTUnrankedRemain : APTUnrankedRemain
+    ) : Promise<Result<ParsingEntity<APTUnrankedRemainDetails>[]>> {
+        
+        return this.getApiData<APTUnrankedRemainDetails>(
+            this.unrankedRemainDetailsFactory,
+            this.unrankedRemainDetailsFactory.getApiUrl(aPTUnrankedRemain),
+        );      
+    }
+
+    //#. 임의공급 정보
+    async getAPTOptionalSupplyList(startDate: Date) :  Promise<Result<ParsingEntity<APTOptionalSupply>[]>> {
+        return this.getApiData(
+            this.optionalSupplyFactory,
+            this.optionalSupplyFactory.getApiUrl(startDate),
+        );  
+    }
+
+    //#. 주택형별 임의공급 상세정보
+    async getAPTOptionalSupplyByTypeList(
+        aPTOptionalSupply : APTOptionalSupply
+    ) : Promise<Result<ParsingEntity<APTOptionalSupplyDetails>[]>>{
+
+        return this.getApiData<APTOptionalSupplyDetails>(
+            this.optionalSupplyDetailsFactory,
+            this.optionalSupplyDetailsFactory.getApiUrl(aPTOptionalSupply),
+        ); 
+    }
+
+    
 }

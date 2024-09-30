@@ -22,6 +22,7 @@ import { CommentController } from './feature/comment/comment.controller';
 import { SiteReviewController } from './feature/site_review/site_review.controller';
 import { NoticeController } from './feature/notice/notice.controller';
 import { UserController } from './feature/user/user.controller';
+import { ApplyHommeApiService as ApplyHomeApiService } from './feature/applyhome/applyhome_api.service';
 
 //TODO 클라이언트의 요청 파라미터를 어디서 검증 할 것인지
 //TODO 파라미터가 null일때 
@@ -39,7 +40,8 @@ admin.initializeApp({
 
 const commentService = new CommentService();
 const siteReviewService = new SiteReviewService();
-const noticeService = new NoticeService();
+const applyHomeApiService = new ApplyHomeApiService()
+const noticeService = new NoticeService(applyHomeApiService);
 const scrapService = new ScrapService();
 const userService = new UserService();  
 const authService = new AuthService(userService);
@@ -75,14 +77,6 @@ export const increase_notice_view_count = functions.region("asia-northeast3").ht
 
 export const like_notice = functions.region("asia-northeast3").https.onRequest(noticeController.likeNotice);
 
-export const make_notice_documents = functions
-  .region("asia-northeast3")
-  .pubsub.schedule("every day 00:00")
-  .timeZone("Asia/Seoul")
-  .onRun(async (_) => {
-  	noticeController.makeNoticeDocuments();
-});
-
 export const update_notice_scrap_count = functions.region("asia-northeast3").https.onRequest(noticeController.updateNoticeScrapCount);
 
 export const delete_all_notice_scrap = functions.region("asia-northeast3").https.onRequest(noticeController.deleteAllNoticeScrap);
@@ -92,6 +86,17 @@ export const update_user_info = functions.region("asia-northeast3").https.onRequ
 
 //#. 닉네임
 export const check_display_name = functions.region("asia-northeast3").https.onRequest(userController.updateUserInfo);
+
+
+//#. 아파트 공고 업데이트
+export const update_apt_info = functions
+  .region("asia-northeast3")
+  .pubsub.schedule("every day 00:00")
+  .timeZone("Asia/Seoul")
+  .onRun(async (_) => {
+  	noticeService.updateAptInfo();
+});
+
 
 // export const get_house_type_announcement = functions.region("asia-northeast3").https.onRequest(
 //   withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
@@ -105,5 +110,3 @@ export const check_display_name = functions.region("asia-northeast3").https.onRe
 //   })
 // );
 
-
-//export const make_notice_documents_force = functions.region("asia-northeast3").https.onRequest(noticeController.makeNoticeDocumentForce);

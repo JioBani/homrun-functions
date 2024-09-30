@@ -47,7 +47,7 @@ export class AuthService {
     }
 
     async getKakaoUserInfo(accessToken : string) : Promise<KakaoUserResponse>{
-        const url = 'https://kapi.kakao.com/v2/user/me';
+        const url = 'https://kapi.kakao.com/v2/user/me'; //TODO 토큰 확인으로 변경
 
         try {
             const response: AxiosResponse<KakaoUserResponse> = await axios.get(url, {
