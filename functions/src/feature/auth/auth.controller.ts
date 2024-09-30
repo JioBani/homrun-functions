@@ -1,4 +1,4 @@
-import { withApiResponseHandler } from "../../middleware/api-response-handler";
+import { withApiResponseHandler, withAuthHandler } from "../../middleware/api-response-handler";
 import { BadRequestError, InvalidParameterError, UnauthorizedError } from '../../error/http.error';
 import { ApiResponse } from '../../model/api-response';
 import { Response} from 'express';
@@ -39,7 +39,7 @@ export class AuthController{
 
 
     //TODO 임시로 유효성을 index 에서 처리
-    signUp = withApiResponseHandler(async (request : Request , _ : Response) : Promise<ApiResponse>=>{
+    signUp = withAuthHandler(async (request : Request , _ : Response) : Promise<ApiResponse>=>{
         const authHeader = request.headers.authorization;
     
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -99,6 +99,5 @@ export class AuthController{
           status : 200,
           data : result
         });
-    })
-
+    });
 }
