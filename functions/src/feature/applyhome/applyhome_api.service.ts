@@ -1,36 +1,35 @@
-import { APTAnnouncement, APTAnnouncementFactory } from "./model/apt_announcement";
+import { AptAnnouncement, AptAnnouncementFactory } from "./model/apt_announcement";
 import { AptAnnouncementDetails, AptAnnouncementDetailsFactory } from "./model/apt_announcement_details";
 import axios from "axios";
-import { APTUnrankedRemain, APTUnrankedRemainFactory } from "./model/apt_unranked_remain";
-import { APTOptionalSupply, APTOptionalSupplyFactory } from "./model/apt_optional_supply";
-import { APTUnrankedRemainDetails, APTUnrankedRemainDetailByTypeFactory } from "./model/apt_unranked_remain_details";
-import { APTOptionalSupplyDetails, APTOptionalSupplyDetailsFactory } from "./model/apt_optional_supply_details";
+import { AptUnrankedRemain, AptUnrankedRemainFactory } from "./model/apt_unranked_remain";
+import { AptOptionalSupply, AptOptionalSupplyFactory } from "./model/apt_optional_supply";
+import { AptUnrankedRemainDetails, AptUnrankedRemainDetailByTypeFactory } from "./model/apt_unranked_remain_details";
+import { AptOptionalSupplyDetails, AptOptionalSupplyDetailsFactory } from "./model/apt_optional_supply_details";
 import { Result } from "../../common/result";
 import { ParsingEntity } from "../../common/parsing_result";
-import { AptBasicInfo, AptDetailsInfo, APTInfo } from "./model/apt.model";
+import { AptBasicInfo, AptDetailsInfo, AptInfo } from "./model/apt.model";
 import { AptBasicInfoFactory, AptDetailsInfoFactory, AptFactory } from "./factory/apply_heme.factory";
 import { ApplyHomeDto } from "./model/apply_home.dto";
-import { SupplyMethod } from "./value/supply_method.enum";
 import { ApplyHomeFetchResult } from "./common/apply_home_fetch_result";
 import { ApplyHomeResult } from "./common/apply_home_result";
 import { ApplyHomeResultStatistics } from "./common/apply_home_result_statistics";
+//import { ApiResult } from "@/common/api_result";
 
 export class ApplyHommeApiService{
 
-    announcementFactory = new APTAnnouncementFactory();
+    announcementFactory = new AptAnnouncementFactory();
     announcementDetailsFactory = new AptAnnouncementDetailsFactory();
 
-    unrankedRemainFactory = new APTUnrankedRemainFactory();
-    unrankedRemainDetailsFactory = new APTUnrankedRemainDetailByTypeFactory();
+    unrankedRemainFactory = new AptUnrankedRemainFactory();
+    unrankedRemainDetailsFactory = new AptUnrankedRemainDetailByTypeFactory();
 
-    optionalSupplyFactory = new APTOptionalSupplyFactory();
-    optionalSupplyDetailsFactory = new APTOptionalSupplyDetailsFactory();   
+    optionalSupplyFactory = new AptOptionalSupplyFactory();
+    optionalSupplyDetailsFactory = new AptOptionalSupplyDetailsFactory();   
 
 
     //#. 일반 아파트 정보
     async getAptAnnouncementInfo(currentDate : Date) : Promise<ApplyHomeResult>{
         return this.getAptInfo(
-            SupplyMethod.General,
             this.announcementFactory,
             this.announcementDetailsFactory,
             currentDate
@@ -40,7 +39,6 @@ export class ApplyHommeApiService{
     //#. 무순위/잔여세대 정보
     async getUrankedRemainInfo(currentDate : Date) : Promise<ApplyHomeResult>{
         return this.getAptInfo(
-            SupplyMethod.UnrankedRemain,
             this.unrankedRemainFactory,
             this.unrankedRemainDetailsFactory,
             currentDate
@@ -50,7 +48,6 @@ export class ApplyHommeApiService{
     //#. 임의 공급 정보
     async getAPTOptionalSupplyInfo(currentDate : Date) : Promise<ApplyHomeResult>{
         return this.getAptInfo(
-            SupplyMethod.General,
             this.optionalSupplyFactory,
             this.optionalSupplyDetailsFactory,
             currentDate
@@ -59,7 +56,7 @@ export class ApplyHommeApiService{
 
 
     //#. url 위치의 API에서 정보를 가져와 객체로 반환
-    async getApiData<T extends APTInfo>(factory : AptFactory<APTInfo>, url : string) : Promise<Result<ParsingEntity<T>[]>>{
+    async getApiData<T extends AptInfo>(factory : AptFactory<AptInfo>, url : string) : Promise<Result<ParsingEntity<T>[]>>{
         return Result.executeAsync<ParsingEntity<T>[]>(async ()=>{
 
             const response = await axios.get(url);
@@ -84,9 +81,38 @@ export class ApplyHommeApiService{
         });
     }   
 
+
+    //  //#. url 위치의 API에서 정보를 가져와 객체로 반환
+    //  async getApiData2<T extends APTInfo>(factory : AptFactory<APTInfo>, url : string) : Promise<ApiResult<ParsingEntity<T>[]>>{
+    //     let response;
+
+    //     try{
+    //         response = await axios.get(url);
+    //     }catch(e){
+    //         return ApiResult.failure(e , null);
+    //     }
+
+    //     //#. 상태 코드가 200이 아닌 경우
+    //     if(response.status != 200){
+    //         return ApiResult.failure(new Error(`청약홈 API 통신 오류: 상태 코드 ${response.status}`) , response.data);
+    //     }
+
+    //     if(!Array.isArray(response.data.data)){
+    //         return ApiResult.failure(new Error(`청약홈 API 데이터 오류: data가 Array가 아님 ${response.data.data}`) , response.data);
+    //     }
+
+    //     const list : ParsingEntity<T>[] = response.data.data.map((item : any)=>{
+    //         return ParsingEntity.fromParsing(
+    //             ()=>factory.fromMap(item)
+    //         );
+    //     });
+
+    //     return ApiResult.success(list , response.data);
+    // }   
+
+
     //#. 공급 방식에 따라 API에서 정보를 가져와 ApplyHomeResult로 반환
     async getAptInfo(
-        supplyMethod : SupplyMethod,
         basicfactory : AptBasicInfoFactory<AptBasicInfo>,
         detailsFactory : AptDetailsInfoFactory<AptDetailsInfo>,
         startDate : Date
@@ -105,7 +131,6 @@ export class ApplyHommeApiService{
                     data : null,
                     startDate : startDate,
                     statistics : new ApplyHomeResultStatistics(
-                        supplyMethod,
                         ApplyHomeFetchResult.fromFailure("root" , basicInfo.error)
                     )
                 });
@@ -143,7 +168,7 @@ export class ApplyHommeApiService{
                 name : "",
                 data : dtoList,
                 startDate : startDate,
-                statistics : new ApplyHomeResultStatistics(supplyMethod,fetchResult)
+                statistics : new ApplyHomeResultStatistics(fetchResult)
             });
         }catch(e){
             console.error(`[getAptInfo] ${e}`);
@@ -159,10 +184,10 @@ export class ApplyHommeApiService{
      * 전체 함수의 예외 처리는 외부에서 처리해야 합니다.
      * 
      * @param {Date} startDate - 데이터 조회를 시작할 시각.
-     * @returns {Promise<Array<APTAnnouncement | null>>} APTAnnouncement 객체 배열 또는 항목 처리 중 오류가 발생한 경우 `null`이 포함된 배열을 반환합니다.
+     * @returns {Promise<Array<AptAnnouncement | null>>} APTAnnouncement 객체 배열 또는 항목 처리 중 오류가 발생한 경우 `null`이 포함된 배열을 반환합니다.
      * 
      */
-    async getAPTAnnouncementList(startDate: Date): Promise<Result<ParsingEntity<APTAnnouncement>[]>> {
+    async getAPTAnnouncementList(startDate: Date): Promise<Result<ParsingEntity<AptAnnouncement>[]>> {
         return this.getApiData(
             this.announcementFactory,
             this.announcementFactory.getApiUrl(startDate),
@@ -176,7 +201,7 @@ export class ApplyHommeApiService{
      * @param announcementNumber 공고번호
      */
     async getAptAnnouncementByHouseTypeList(
-        announcement : APTAnnouncement
+        announcement : AptAnnouncement
     ) : Promise<Result<ParsingEntity<AptAnnouncementDetails>[]>> {
         return this.getApiData(
             this.announcementDetailsFactory,
@@ -186,8 +211,8 @@ export class ApplyHommeApiService{
 
     
     //#. 무순위/잔여세대 정보
-    async getAPTUnrankedRemainList(startDate: Date) : Promise<Result<ParsingEntity<APTUnrankedRemain>[]>>{    
-        return this.getApiData<APTUnrankedRemain>(
+    async getAPTUnrankedRemainList(startDate: Date) : Promise<Result<ParsingEntity<AptUnrankedRemain>[]>>{    
+        return this.getApiData<AptUnrankedRemain>(
             this.unrankedRemainFactory,
             this.unrankedRemainFactory.getApiUrl(startDate),
         ); 
@@ -195,17 +220,17 @@ export class ApplyHommeApiService{
 
     //#. 주택형별 무순위/잔여세대 상세정보
     async getAPTUnrankedRemainDetailByTypeList(
-        aPTUnrankedRemain : APTUnrankedRemain
-    ) : Promise<Result<ParsingEntity<APTUnrankedRemainDetails>[]>> {
+        aPTUnrankedRemain : AptUnrankedRemain
+    ) : Promise<Result<ParsingEntity<AptUnrankedRemainDetails>[]>> {
         
-        return this.getApiData<APTUnrankedRemainDetails>(
+        return this.getApiData<AptUnrankedRemainDetails>(
             this.unrankedRemainDetailsFactory,
             this.unrankedRemainDetailsFactory.getApiUrl(aPTUnrankedRemain),
         );      
     }
 
     //#. 임의공급 정보
-    async getAPTOptionalSupplyList(startDate: Date) :  Promise<Result<ParsingEntity<APTOptionalSupply>[]>> {
+    async getAPTOptionalSupplyList(startDate: Date) :  Promise<Result<ParsingEntity<AptOptionalSupply>[]>> {
         return this.getApiData(
             this.optionalSupplyFactory,
             this.optionalSupplyFactory.getApiUrl(startDate),
@@ -214,10 +239,10 @@ export class ApplyHommeApiService{
 
     //#. 주택형별 임의공급 상세정보
     async getAPTOptionalSupplyByTypeList(
-        aPTOptionalSupply : APTOptionalSupply
-    ) : Promise<Result<ParsingEntity<APTOptionalSupplyDetails>[]>>{
+        aPTOptionalSupply : AptOptionalSupply
+    ) : Promise<Result<ParsingEntity<AptOptionalSupplyDetails>[]>>{
 
-        return this.getApiData<APTOptionalSupplyDetails>(
+        return this.getApiData<AptOptionalSupplyDetails>(
             this.optionalSupplyDetailsFactory,
             this.optionalSupplyDetailsFactory.getApiUrl(aPTOptionalSupply),
         ); 

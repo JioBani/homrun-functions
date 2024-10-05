@@ -8,7 +8,7 @@ import { ApplyHomeApiUrls } from "../value/apply_home_api_urls";
 /**
  * APT 임의공급 분양정보 상세정보를 나타내는 클래스.
  */
-export class APTOptionalSupply implements AptBasicInfo{
+export class AptOptionalSupply implements AptBasicInfo {
     /**
      * 주택 관리 번호 (주택관리번호).
      * 항목구분: 옵션(0)
@@ -19,7 +19,7 @@ export class APTOptionalSupply implements AptBasicInfo{
      * 공고 번호 (공고번호).
      * 항목구분: 옵션(0)
      */
-    publicNoticeNumber: string;
+    publicAnnouncementNumber: string; // publicNoticeNumber -> publicAnnouncementNumber로 수정
 
     /**
      * 주택명 (주택명).
@@ -37,7 +37,7 @@ export class APTOptionalSupply implements AptBasicInfo{
      * 주택 구분 코드명 (주택구분코드명).
      * 항목구분: 옵션(0)
      */
-    houseSectionCodeName: string | null;
+    houseSectionName: string | null; // houseSectionCodeName -> houseSectionName으로 수정
 
     /**
      * 공급 위치 우편번호 (공급위치 우편번호).
@@ -91,31 +91,31 @@ export class APTOptionalSupply implements AptBasicInfo{
      * 일반 공급 접수 시작일 (Firebase Timestamp).
      * 항목구분: 옵션(0)
      */
-    generalSupplyReceptionStartDate: Timestamp | null;
+    generalSupplyReceptionStartDate: Timestamp | null; // 일반공급접수 관련 필드는 APTAnnouncementFields에 없으므로 그대로 유지
 
     /**
      * 일반 공급 접수 종료일 (Firebase Timestamp).
      * 항목구분: 옵션(0)
      */
-    generalSupplyReceptionEndDate: Timestamp | null;
+    generalSupplyReceptionEndDate: Timestamp | null; // 일반공급접수 관련 필드는 APTAnnouncementFields에 없으므로 그대로 유지
 
     /**
      * 당첨자 발표일 (Firebase Timestamp).
      * 항목구분: 옵션(0)
      */
-    winnerAnnouncementDate: Timestamp | null;
+    prizeWinnerAnnouncementDate: Timestamp | null; // winnerAnnouncementDate -> prizeWinnerAnnouncementDate로 수정
 
     /**
      * 계약 시작일 (Firebase Timestamp).
      * 항목구분: 옵션(0)
      */
-    contractStartDate: Timestamp | null;
+    contractConclusionStartDate: Timestamp | null; // contractStartDate -> contractConclusionStartDate로 수정
 
     /**
      * 계약 종료일 (Firebase Timestamp).
      * 항목구분: 옵션(0)
      */
-    contractEndDate: Timestamp | null;
+    contractConclusionEndDate: Timestamp | null; // contractEndDate -> contractConclusionEndDate로 수정
 
     /**
      * 홈페이지 주소 (홈페이지주소).
@@ -133,20 +133,21 @@ export class APTOptionalSupply implements AptBasicInfo{
      * 문의처 (문의처).
      * 항목구분: 옵션(0)
      */
-    inquiryPhoneNumber: string | null;
+    inquiryTelephone: string | null; // inquiryPhoneNumber -> inquiryTelephone으로 수정
 
     /**
      * 입주 예정월 (입주예정월).
      * 항목구분: 옵션(0)
      */
-    moveInPlannedYearMonth: string | null;
+    moveInPrearrangeYearMonth: string | null; // moveInPlannedYearMonth -> moveInPrearrangeYearMonth으로 수정
+
 
     constructor(data: {
         houseManageNumber: string,
         publicAnnouncementNumber: string,
         houseName: string | null,
         houseSectionCode: string | null,
-        houseSectionCodeName: string | null,
+        houseSectionName: string | null, // houseSectionCodeName -> houseSectionName으로 수정
         supplyLocationZipCode: string | null,
         supplyLocationAddress: string | null,
         totalSupplyHouseholdCount: number | null,
@@ -157,19 +158,19 @@ export class APTOptionalSupply implements AptBasicInfo{
         specialSupplyReceptionEndDate: Timestamp | null,
         generalSupplyReceptionStartDate: Timestamp | null,
         generalSupplyReceptionEndDate: Timestamp | null,
-        winnerAnnouncementDate: Timestamp | null,
-        contractStartDate: Timestamp | null,
-        contractEndDate: Timestamp | null,
+        prizeWinnerAnnouncementDate: Timestamp | null, // winnerAnnouncementDate -> prizeWinnerAnnouncementDate로 수정
+        contractConclusionStartDate: Timestamp | null, // contractStartDate -> contractConclusionStartDate로 수정
+        contractConclusionEndDate: Timestamp | null, // contractEndDate -> contractConclusionEndDate로 수정
         homepageAddress: string | null,
         businessEntityName: string | null,
-        inquiryPhoneNumber: string | null,
-        moveInPlannedYearMonth: string | null,
+        inquiryTelephone: string | null, // inquiryPhoneNumber -> inquiryTelephone으로 수정
+        moveInPrearrangeYearMonth: string | null, // moveInPlannedYearMonth -> moveInPrearrangeYearMonth으로 수정
     }) {
         this.houseManageNumber = data.houseManageNumber;
-        this.publicNoticeNumber = data.publicAnnouncementNumber;
+        this.publicAnnouncementNumber = data.publicAnnouncementNumber; // publicNoticeNumber -> publicAnnouncementNumber로 수정
         this.houseName = data.houseName;
         this.houseSectionCode = data.houseSectionCode;
-        this.houseSectionCodeName = data.houseSectionCodeName;
+        this.houseSectionName = data.houseSectionName; // 수정된 필드명 반영
         this.supplyLocationZipCode = data.supplyLocationZipCode;
         this.supplyLocationAddress = data.supplyLocationAddress;
         this.totalSupplyHouseholdCount = data.totalSupplyHouseholdCount;
@@ -180,28 +181,30 @@ export class APTOptionalSupply implements AptBasicInfo{
         this.specialSupplyReceptionEndDate = data.specialSupplyReceptionEndDate;
         this.generalSupplyReceptionStartDate = data.generalSupplyReceptionStartDate;
         this.generalSupplyReceptionEndDate = data.generalSupplyReceptionEndDate;
-        this.winnerAnnouncementDate = data.winnerAnnouncementDate;
-        this.contractStartDate = data.contractStartDate;
-        this.contractEndDate = data.contractEndDate;
+        this.prizeWinnerAnnouncementDate = data.prizeWinnerAnnouncementDate; // 수정된 필드명 반영
+        this.contractConclusionStartDate = data.contractConclusionStartDate; // 수정된 필드명 반영
+        this.contractConclusionEndDate = data.contractConclusionEndDate; // 수정된 필드명 반영
         this.homepageAddress = data.homepageAddress;
         this.businessEntityName = data.businessEntityName;
-        this.inquiryPhoneNumber = data.inquiryPhoneNumber;
-        this.moveInPlannedYearMonth = data.moveInPlannedYearMonth;
+        this.inquiryTelephone = data.inquiryTelephone; // 수정된 필드명 반영
+        this.moveInPrearrangeYearMonth = data.moveInPrearrangeYearMonth; // 수정된 필드명 반영
     }
+        
 
     /**
-     * 주어진 객체로부터 APTOptionalSupplyDetail 객체를 생성합니다.
+     * 주어진 객체로부터 APTOptionalSupply 객체를 생성합니다.
      * Firebase Timestamp로 변환할 수 있는 필드들은 TimeFormatter를 이용해 변환합니다.
-     * @param map 객체로부터 데이터를 읽어와서 APTOptionalSupplyDetail 인스턴스를 생성합니다.
-     * @returns APTOptionalSupplyDetail 인스턴스
+     * @param map 객체로부터 데이터를 읽어와서 APTOptionalSupply 인스턴스를 생성합니다.
+     * @returns APTOptionalSupply 인스턴스
      */
-    static fromMap(map: { [key: string]: any }): APTOptionalSupply {
-        return new APTOptionalSupply({
+    static fromMap(map: { [key: string]: any }): AptOptionalSupply {
+        //#. 임의공급의 날짜는 0000000형태의 문자열
+        return new AptOptionalSupply({
             houseManageNumber: map[APTOptionalSupplyFields.houseManageNumber],
             publicAnnouncementNumber: map[APTOptionalSupplyFields.publicAnnouncementNumber],
             houseName: map[APTOptionalSupplyFields.houseName] ?? null,
             houseSectionCode: map[APTOptionalSupplyFields.houseSectionCode] ?? null,
-            houseSectionCodeName: map[APTOptionalSupplyFields.houseSectionCodeName] ?? null,
+            houseSectionName: map[APTOptionalSupplyFields.houseSectionName] ?? null, // houseSectionCodeName -> houseSectionName으로 수정
             supplyLocationZipCode: map[APTOptionalSupplyFields.supplyLocationZipCode] ?? null,
             supplyLocationAddress: map[APTOptionalSupplyFields.supplyLocationAddress] ?? null,
             totalSupplyHouseholdCount: map[APTOptionalSupplyFields.totalSupplyHouseholdCount] ?? null,
@@ -212,51 +215,20 @@ export class APTOptionalSupply implements AptBasicInfo{
             specialSupplyReceptionEndDate: TimeFormatter.tryStringToFirebaseTimestamp(map[APTOptionalSupplyFields.specialSupplyReceptionEndDate] as string) ?? null,
             generalSupplyReceptionStartDate: TimeFormatter.tryStringToFirebaseTimestamp(map[APTOptionalSupplyFields.generalSupplyReceptionStartDate] as string) ?? null,
             generalSupplyReceptionEndDate: TimeFormatter.tryStringToFirebaseTimestamp(map[APTOptionalSupplyFields.generalSupplyReceptionEndDate] as string) ?? null,
-            winnerAnnouncementDate: TimeFormatter.tryStringToFirebaseTimestamp(map[APTOptionalSupplyFields.winnerAnnouncementDate] as string) ?? null,
-            contractStartDate: TimeFormatter.tryStringToFirebaseTimestamp(map[APTOptionalSupplyFields.contractStartDate] as string) ?? null,
-            contractEndDate: TimeFormatter.tryStringToFirebaseTimestamp(map[APTOptionalSupplyFields.contractEndDate] as string) ?? null,
+            prizeWinnerAnnouncementDate: TimeFormatter.tryStringToFirebaseTimestamp(map[APTOptionalSupplyFields.prizeWinnerAnnouncementDate] as string) ?? null, // winnerAnnouncementDate -> prizeWinnerAnnouncementDate로 수정
+            contractConclusionStartDate: TimeFormatter.tryStringToFirebaseTimestamp(map[APTOptionalSupplyFields.contractConclusionStartDate] as string) ?? null, // contractStartDate -> contractConclusionStartDate로 수정
+            contractConclusionEndDate: TimeFormatter.tryStringToFirebaseTimestamp(map[APTOptionalSupplyFields.contractConclusionEndDate] as string) ?? null, // contractEndDate -> contractConclusionEndDate로 수정
             homepageAddress: map[APTOptionalSupplyFields.homepageAddress] ?? null,
             businessEntityName: map[APTOptionalSupplyFields.businessEntityName] ?? null,
-            inquiryPhoneNumber: map[APTOptionalSupplyFields.inquiryPhoneNumber] ?? null,
-            moveInPlannedYearMonth: map[APTOptionalSupplyFields.moveInPlannedYearMonth] ?? null,
+            inquiryTelephone: map[APTOptionalSupplyFields.inquiryTelephone] ?? null, // inquiryPhoneNumber -> inquiryTelephone으로 수정
+            moveInPrearrangeYearMonth: map[APTOptionalSupplyFields.moveInPrearrangeYearMonth] ?? null // moveInPlannedYearMonth -> moveInPrearrangeYearMonth으로 수정
         });
-    }
-
-    /**
-     * 현재 객체를 맵으로 변환합니다.
-     * @returns 객체의 데이터가 담긴 맵
-     */
-    toMap(): { [key: string]: any } {
-        return {
-            houseManageNumber: this.houseManageNumber,
-            publicAnnouncementNumber: this.publicNoticeNumber,
-            houseName: this.houseName,
-            houseSectionCode: this.houseSectionCode,
-            houseSectionCodeName: this.houseSectionCodeName,
-            supplyLocationZipCode: this.supplyLocationZipCode,
-            supplyLocationAddress: this.supplyLocationAddress,
-            totalSupplyHouseholdCount: this.totalSupplyHouseholdCount,
-            recruitmentPublicAnnouncementDate: this.recruitmentPublicAnnouncementDate,
-            subscriptionReceptionStartDate: this.subscriptionReceptionStartDate,
-            subscriptionReceptionEndDate: this.subscriptionReceptionEndDate,
-            specialSupplyReceptionStartDate: this.specialSupplyReceptionStartDate,
-            specialSupplyReceptionEndDate: this.specialSupplyReceptionEndDate,
-            generalSupplyReceptionStartDate: this.generalSupplyReceptionStartDate,
-            generalSupplyReceptionEndDate: this.generalSupplyReceptionEndDate,
-            winnerAnnouncementDate: this.winnerAnnouncementDate,
-            contractStartDate: this.contractStartDate,
-            contractEndDate: this.contractEndDate,
-            homepageAddress: this.homepageAddress,
-            businessEntityName: this.businessEntityName,
-            inquiryPhoneNumber: this.inquiryPhoneNumber,
-            moveInPlannedYearMonth: this.moveInPlannedYearMonth
-        };
     }
 }
 
-export class APTOptionalSupplyFactory implements AptBasicInfoFactory<APTOptionalSupply>{
-    fromMap(map: { [key: string]: any; }): APTOptionalSupply {
-        return APTOptionalSupply.fromMap(map);
+export class AptOptionalSupplyFactory implements AptBasicInfoFactory<AptOptionalSupply>{
+    fromMap(map: { [key: string]: any; }): AptOptionalSupply {
+        return AptOptionalSupply.fromMap(map);
     }    
 
     getApiUrl(startDate: Date): string {

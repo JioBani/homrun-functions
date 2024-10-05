@@ -112,6 +112,25 @@ export class NoticeService{
         logger.log("공급 방식 : 임의 공급 완료")
     }
 
+      //#. 공고 업데이트
+      async updateAptInfoForce(){
+        const currentDate = new Date();
+        currentDate.setMonth(currentDate.getMonth() - 2);
+
+        const announcementResult = await this.applyHomeApiService.getAptAnnouncementInfo(currentDate);
+        await this.updateAptInfoByApplyHomeResult(announcementResult, SupplyMethod.General);
+        logger.log("공급 방식 : 일반 완료")
+
+        const unrankedRemainResult = await this.applyHomeApiService.getUrankedRemainInfo(currentDate);
+        await this.updateAptInfoByApplyHomeResult(unrankedRemainResult, SupplyMethod.UnrankedRemain);
+        logger.log("공급 방식 : 무순위, 잔여세대 완료")
+
+        const optionalSupplytResult = await this.applyHomeApiService.getAPTOptionalSupplyInfo(currentDate);
+        await this.updateAptInfoByApplyHomeResult(optionalSupplytResult, SupplyMethod.OptionalSupply);
+        logger.log("공급 방식 : 임의 공급 완료")
+    }
+
+
     //#. API 결과를 이용해서 Firebase에 공고를 업로드하고 결과를 저장
     async updateAptInfoByApplyHomeResult(result : ApplyHomeResult , supplyMethod : SupplyMethod){
         let uploadResult = null;
@@ -133,7 +152,7 @@ export class NoticeService{
             this.aptInfoUploadCollection.doc(Timestamp.now().toMillis().toString()).set({
                 date : Timestamp.now(),
                 supplyMethod : supplyMethod,
-                statistics : result.statistics.toMap(),
+                statistics : result.statistics.toMapWithTimeStamp(),
                 firebaseResult : uploadResult,
             });
         }catch(e){
@@ -141,38 +160,40 @@ export class NoticeService{
         }
     }
 
+    
+
     //#. DTO를 firebase에 업로드
     private async uploadAptDto(applyHomeDto : ApplyHomeDto , supplyMethod : SupplyMethod)
     {
         try{
 
-            const doc = this.noticeCollection.doc(applyHomeDto.basicInfo.publicNoticeNumber);
+            const doc = this.noticeCollection.doc(applyHomeDto.basicInfo.publicAnnouncementNumber);
 
             let isUpdate = false;
 
             //#. 문서가 있으면 업데이트로 
             isUpdate = (await doc.get()).exists;
-
-            await this.noticeCollection.doc(applyHomeDto.basicInfo.publicNoticeNumber).set({
-                [NoticeDtoFields.noticeId] : applyHomeDto.basicInfo.publicNoticeNumber,
+            
+            await this.noticeCollection.doc(applyHomeDto.basicInfo.publicAnnouncementNumber).set({
+                [NoticeDtoFields.noticeId] : applyHomeDto.basicInfo.publicAnnouncementNumber,
                 [NoticeDtoFields.views] : 0,  //#. 조회수
                 [NoticeDtoFields.likes] : 0,  //#. 좋아요
                 [NoticeDtoFields.scraps] : 0, //#. 스크랩 수
                 [NoticeDtoFields.houseName] : applyHomeDto.basicInfo.houseName, //#. 아파트 이름
-                [NoticeDtoFields.applicationReceptionStartDate] : applyHomeDto.basicInfo.subscriptionReceptionStartDate,
+                [NoticeDtoFields.subscriptionReceptionStartDate] : applyHomeDto.basicInfo.subscriptionReceptionStartDate,
                 [NoticeDtoFields.recruitmentPublicAnnouncementDate] : applyHomeDto.basicInfo.recruitmentPublicAnnouncementDate,
                 [NoticeDtoFields.supplyMethod] : supplyMethod,
-                [NoticeDtoFields.info] : applyHomeDto.toMap(), //#. 공고
+                [NoticeDtoFields.info] :applyHomeDto.toMapWithTimeStamp(), //#. 공고
             });
 
             return {
-                publicNoticeNumber : applyHomeDto.basicInfo.publicNoticeNumber,
+                publicNoticeNumber : applyHomeDto.basicInfo.publicAnnouncementNumber,
                 result : isUpdate ? "updated" : "generated"
             };
         }catch(e){
             logger.error(e);
             return {
-                publicNoticeNumber : applyHomeDto.basicInfo.publicNoticeNumber,
+                publicNoticeNumber : applyHomeDto.basicInfo.publicAnnouncementNumber,
                 result : e
             };
         }           

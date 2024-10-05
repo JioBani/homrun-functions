@@ -23,6 +23,11 @@ import { SiteReviewController } from './feature/site_review/site_review.controll
 import { NoticeController } from './feature/notice/notice.controller';
 import { UserController } from './feature/user/user.controller';
 import { ApplyHommeApiService as ApplyHomeApiService } from './feature/applyhome/applyhome_api.service';
+import { logger } from 'firebase-functions';
+import { ApiResponse } from './model/api-response';
+import { withApiResponseHandler } from './middleware/api-response-handler';
+import { Response} from 'express';
+import {Request} from "firebase-functions/v2/https";
 
 //TODO 클라이언트의 요청 파라미터를 어디서 검증 할 것인지
 //TODO 파라미터가 null일때 
@@ -88,24 +93,31 @@ export const update_user_info = functions.region("asia-northeast3").https.onRequ
 export const check_display_name = functions.region("asia-northeast3").https.onRequest(userController.updateUserInfo);
 
 
-//#. 아파트 공고 업데이트
-export const update_apt_info = functions
-  .region("asia-northeast3")
-  .pubsub.schedule("every day 00:00")
-  .timeZone("Asia/Seoul")
-  .onRun(async (_) => {
-  	noticeService.updateAptInfo();
-});
+// 아파트 공고 업데이트
+export const update_apt_info = functions.region('asia-northeast3')
+  .runWith({ timeoutSeconds: 540 })
+  .pubsub
+  .schedule('30 20 * * *') // 매일 18:30 실행
+  .timeZone('Asia/Seoul') // 타임존 설정
+  .onRun(async (context) => {
+    logger.info('update_apt_info 함수 실행 시작'); // 함수 시작 로그
 
+    try {
+      await noticeService.updateAptInfo();
+      logger.info('update_apt_info 함수 실행 완료'); // 함수 완료 로그
+    } catch (error) {
+      logger.error('update_apt_info 함수 실행 중 오류 발생:', error); // 오류 발생 시 로그
+    }
 
-// export const get_house_type_announcement = functions.region("asia-northeast3").https.onRequest(
+    return null;
+  });
+  
+
+// export const update_apt_info_force = functions.region("asia-northeast3").https.onRequest(
 //   withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
-//     const {houseNumber , pbNumber} = request.body;
-
-//     const result =  await noticeService.getAptAnnouncementByHouseType(houseNumber , pbNumber);
 //     return new ApiResponse({
 //       status: 200,
-//       data: result?.toMap()
+//       data: await noticeService.updateAptInfoForce()
 //     });
 //   })
 // );

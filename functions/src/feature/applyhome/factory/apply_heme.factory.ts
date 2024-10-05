@@ -1,11 +1,11 @@
-import { AptBasicInfo, AptDetailsInfo, APTInfo } from "../model/apt.model";
+import { AptBasicInfo, AptDetailsInfo, AptInfo } from "../model/apt.model";
 import { MappableFactory } from "../../../common/mappable.factory";
 
 /**
  * 아파트 정보 팩토리 인터페이스
  * @template T 아파트 정보 타입 (APTInfo를 상속)
  */
-export interface AptFactory<T extends APTInfo> extends MappableFactory<T> {
+export interface AptFactory<T extends AptInfo> extends MappableFactory<T> {
 
 }
 

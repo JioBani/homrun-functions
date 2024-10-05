@@ -1,12 +1,12 @@
 import { AptDetailsInfoFactory } from "../factory/apply_heme.factory";
 import { ApplyHomeApiUrls } from "../value/apply_home_api_urls";
-import { APTOptionalSupplyDetailByTypeFields as APTOptionalSupplyDetailsFields } from "../value/apt_optional_supply_detail_by_type.fields";
+import { APTOptionalSupplyDetailsFields as APTOptionalSupplyDetailsFields } from "../value/apt_optional_supply_details.fields";
 import { AptBasicInfo, AptDetailsInfo } from "./apt.model";
 
 /**
  * APT 임의공급 분양정보 주택형별 정보를 나타내는 클래스.
  */
-export class APTOptionalSupplyDetails implements AptDetailsInfo{
+export class AptOptionalSupplyDetails implements AptDetailsInfo {
     /**
      * 주택 관리 번호 (주택관리번호).
      * 항목구분: 옵션(0)
@@ -17,7 +17,7 @@ export class APTOptionalSupplyDetails implements AptDetailsInfo{
      * 공고 번호 (공고번호).
      * 항목구분: 옵션(0)
      */
-    publicNoticeNumber: string;
+    publicAnnouncementNumber: string;
 
     /**
      * 모델 번호 (모델번호).
@@ -52,7 +52,7 @@ export class APTOptionalSupplyDetails implements AptDetailsInfo{
         topAmount: number | null,
     }) {
         this.houseManageNumber = data.houseManageNumber;
-        this.publicNoticeNumber = data.publicAnnouncementNumber;
+        this.publicAnnouncementNumber = data.publicAnnouncementNumber;
         this.modelNumber = data.modelNumber;
         this.houseType = data.houseType;
         this.generalSupplyHouseholds = data.generalSupplyHouseholds;
@@ -64,37 +64,23 @@ export class APTOptionalSupplyDetails implements AptDetailsInfo{
      * @param map 객체로부터 데이터를 읽어와서 APTOptionalSupplyByType 인스턴스를 생성합니다.
      * @returns APTOptionalSupplyByType 인스턴스
      */
-    static fromMap(map: { [key: string]: any }): APTOptionalSupplyDetails {
-        return new APTOptionalSupplyDetails({
+    static fromMap(map: { [key: string]: any }): AptOptionalSupplyDetails {
+        return new AptOptionalSupplyDetails({
             houseManageNumber: map[APTOptionalSupplyDetailsFields.houseManageNumber],
             publicAnnouncementNumber: map[APTOptionalSupplyDetailsFields.publicAnnouncementNumber],
             modelNumber: map[APTOptionalSupplyDetailsFields.modelNumber] ?? null,
             houseType: map[APTOptionalSupplyDetailsFields.houseType] ?? null,
             generalSupplyHouseholds: map[APTOptionalSupplyDetailsFields.generalSupplyHouseholds] ?? null,
-            topAmount: map[APTOptionalSupplyDetailsFields.topAmount] ?? null,
+            topAmount: map[APTOptionalSupplyDetailsFields.topAmount] != null ?
+                Number(map[APTOptionalSupplyDetailsFields.topAmount]) : null,
         });
-    }
-
-    /**
-     * 현재 객체를 맵으로 변환합니다.
-     * @returns 객체의 데이터가 담긴 맵
-     */
-    toMap(): { [key: string]: any } {
-        return {
-            houseManageNumber: this.houseManageNumber,
-            publicAnnouncementNumber: this.publicNoticeNumber,
-            modelNumber: this.modelNumber,
-            houseType: this.houseType,
-            generalSupplyHouseholds: this.generalSupplyHouseholds,
-            topSupplyAmount: this.topAmount
-        };
     }
 }
 
-export class APTOptionalSupplyDetailsFactory implements AptDetailsInfoFactory<APTOptionalSupplyDetails>{
-    fromMap(map: { [key: string]: any; }): APTOptionalSupplyDetails {
-        return APTOptionalSupplyDetails.fromMap(map);
-    }    
+export class AptOptionalSupplyDetailsFactory implements AptDetailsInfoFactory<AptOptionalSupplyDetails> {
+    fromMap(map: { [key: string]: any; }): AptOptionalSupplyDetails {
+        return AptOptionalSupplyDetails.fromMap(map);
+    }
 
     getApiUrl(basicInfo: AptBasicInfo): string {
         return ApplyHomeApiUrls.getOptionalSupplyDetails(basicInfo);

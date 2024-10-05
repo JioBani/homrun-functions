@@ -1,7 +1,7 @@
 /**
  * APT 분양정보 주택형별 상세조회 필드 매핑
  */
-export const AptAnnouncementByHouseTypeField = {
+export const AptAnnouncementDetailsField = {
     /**
      * 주택 관리 번호 (주택관리번호).
      */
@@ -10,7 +10,7 @@ export const AptAnnouncementByHouseTypeField = {
     /**
      * 공고 번호 (공고번호).
      */
-    publicNoticeNumber: "PBLANC_NO",
+    publicAnnouncementNumber: "PBLANC_NO",
   
     /**
      * 모델 번호 (모델번호).

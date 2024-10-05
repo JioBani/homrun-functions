@@ -6,7 +6,7 @@ export const NoticeDtoFields = {
     scraps : "scraps",
     houseName : "houseName",
     info : "info",
-    applicationReceptionStartDate : "applicationReceptionStartDate", /// 청약 접수 시작일
+    subscriptionReceptionStartDate : "subscriptionReceptionStartDate", /// 청약 접수 시작일
     recruitmentPublicAnnouncementDate : "recruitmentPublicAnnouncementDate", /// 모집 공고일
     aptAnnouncementByTypeList : "aptAnnouncementByTypeList", //#. 유형별 세부 정보
     supplyMethod : "supplyMethod",

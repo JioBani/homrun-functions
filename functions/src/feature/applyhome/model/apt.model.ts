@@ -1,7 +1,6 @@
-import { Mappable } from "../../../common/mappable";
 import { Timestamp } from "firebase-admin/firestore";
 
-export abstract class APTInfo extends Mappable{
+export abstract class AptInfo{
     /**
      * 주택 관리 번호 (주택관리번호).
      * 항목구분: 옵션(0)
@@ -12,10 +11,10 @@ export abstract class APTInfo extends Mappable{
      * 공고 번호 (공고번호).
      * 항목구분: 옵션(0)
      */
-    abstract publicNoticeNumber: string;
+    abstract publicAnnouncementNumber: string;
 }
 
-export interface AptBasicInfo extends APTInfo{
+export interface AptBasicInfo extends AptInfo{
     totalSupplyHouseholdCount : number | null;
 
     /**
@@ -40,7 +39,7 @@ export interface AptBasicInfo extends APTInfo{
 }
 
 
-export interface AptDetailsInfo extends APTInfo{
+export interface AptDetailsInfo extends AptInfo{
       /**
      * 일반 공급 세대수 (일반공급세대수).
      * 항목구분: 옵션(0)

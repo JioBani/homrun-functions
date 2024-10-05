@@ -90,12 +90,4 @@ export class NoticeController{
         data: result
       });
     });
-
-    // updateUnrankedRemainDocument = withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
-    //   const result = await this.noticeService.updateUrankedRemainDocument();
-    //   return new ApiResponse({
-    //     status: 200,
-    //     data: result
-    //   });
-    // });
 }

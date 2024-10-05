@@ -1,14 +1,11 @@
 import { Mappable } from "../../../common/mappable";
 import { logger } from "firebase-functions/v1";
-import { SupplyMethod } from "../value/supply_method.enum";
 import { ApplyHomeFetchResult } from "./apply_home_fetch_result";
 
 /**
  * 청약 결과 통계를 나타내는 클래스입니다.
  */
 export class ApplyHomeResultStatistics extends Mappable{
-    supplyMethod : SupplyMethod;
-
     //#. 통계
     basicFetchSuccess : boolean; // 기본 정보 fetch 성공 여부
 
@@ -33,10 +30,9 @@ export class ApplyHomeResultStatistics extends Mappable{
      * 
      * @param result 청약 결과
      */
-    constructor(supplyMethod :SupplyMethod, result : ApplyHomeFetchResult){
+    constructor(result : ApplyHomeFetchResult){
         super();
 
-        this.supplyMethod = supplyMethod;
         this.basicFetchSuccess = result.isSuccess;
         if(result.isSuccess){
             //#. 기본 정보 파싱 순회

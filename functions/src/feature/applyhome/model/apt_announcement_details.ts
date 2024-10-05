@@ -1,5 +1,5 @@
 import { AptBasicInfo, AptDetailsInfo } from "./apt.model";
-import { AptAnnouncementByHouseTypeField } from "../value/apt_announcement_by_house_type.field";
+import { AptAnnouncementDetailsField } from "../value/apt_announcement_details.field";
 import { AptDetailsInfoFactory } from "../factory/apply_heme.factory";
 import { ApplyHomeApiUrls } from "../value/apply_home_api_urls";
 
@@ -16,7 +16,7 @@ export class AptAnnouncementDetails implements AptDetailsInfo{
     /**
      * 공고 번호 (공고번호).
      */
-    publicNoticeNumber: string;
+    publicAnnouncementNumber: string;
 
     /**
      * 모델 번호 (모델번호).
@@ -97,7 +97,7 @@ export class AptAnnouncementDetails implements AptDetailsInfo{
 
     constructor(
         houseManageNumber: string,
-        publicNoticeNumber: string,
+        publicAnnouncementNumber: string,
         modelNumber: string | null,
         houseType: string | null,
         supplyArea: string | null,
@@ -115,7 +115,7 @@ export class AptAnnouncementDetails implements AptDetailsInfo{
         topAmount: number | null
     ) {
         this.houseManageNumber = houseManageNumber;
-        this.publicNoticeNumber = publicNoticeNumber;
+        this.publicAnnouncementNumber = publicAnnouncementNumber;
         this.modelNumber = modelNumber;
         this.houseType = houseType;
         this.supplyArea = supplyArea;
@@ -141,51 +141,25 @@ export class AptAnnouncementDetails implements AptDetailsInfo{
      */
     static fromMap(map: { [key: string]: any }): AptAnnouncementDetails {
         return new AptAnnouncementDetails(
-            map[AptAnnouncementByHouseTypeField.houseManageNumber] ?? null,
-            map[AptAnnouncementByHouseTypeField.publicNoticeNumber] ?? null,
-            map[AptAnnouncementByHouseTypeField.modelNumber] ?? null,
-            map[AptAnnouncementByHouseTypeField.houseType] ?? null,
-            map[AptAnnouncementByHouseTypeField.supplyArea] ?? null,
-            map[AptAnnouncementByHouseTypeField.generalSupplyHouseholds] ?? null,
-            map[AptAnnouncementByHouseTypeField.specialSupplyHouseholds] ?? null,
-            map[AptAnnouncementByHouseTypeField.multiChildHouseholds] ?? null,
-            map[AptAnnouncementByHouseTypeField.newlywedHouseholds] ?? null,
-            map[AptAnnouncementByHouseTypeField.firstTimeHouseholds] ?? null,
-            map[AptAnnouncementByHouseTypeField.elderlyParentSupportHouseholds] ?? null,
-            map[AptAnnouncementByHouseTypeField.institutionRecommendedHouseholds] ?? null,
-            map[AptAnnouncementByHouseTypeField.otherSpecialHouseholds] ?? null,
-            map[AptAnnouncementByHouseTypeField.relocatedInstitutionHouseholds] ?? null,
-            map[AptAnnouncementByHouseTypeField.youthHouseholds] ?? null,
-            map[AptAnnouncementByHouseTypeField.newbornHouseholds] ?? null,
-            map[AptAnnouncementByHouseTypeField.topAmount] ?? null
+            map[AptAnnouncementDetailsField.houseManageNumber] ?? null,
+            map[AptAnnouncementDetailsField.publicAnnouncementNumber] ?? null,
+            map[AptAnnouncementDetailsField.modelNumber] ?? null,
+            map[AptAnnouncementDetailsField.houseType] ?? null,
+            map[AptAnnouncementDetailsField.supplyArea] ?? null,
+            map[AptAnnouncementDetailsField.generalSupplyHouseholds] ?? null,
+            map[AptAnnouncementDetailsField.specialSupplyHouseholds] ?? null,
+            map[AptAnnouncementDetailsField.multiChildHouseholds] ?? null,
+            map[AptAnnouncementDetailsField.newlywedHouseholds] ?? null,
+            map[AptAnnouncementDetailsField.firstTimeHouseholds] ?? null,
+            map[AptAnnouncementDetailsField.elderlyParentSupportHouseholds] ?? null,
+            map[AptAnnouncementDetailsField.institutionRecommendedHouseholds] ?? null,
+            map[AptAnnouncementDetailsField.otherSpecialHouseholds] ?? null,
+            map[AptAnnouncementDetailsField.relocatedInstitutionHouseholds] ?? null,
+            map[AptAnnouncementDetailsField.youthHouseholds] ?? null,
+            map[AptAnnouncementDetailsField.newbornHouseholds] ?? null,
+            map[AptAnnouncementDetailsField.topAmount] != null ?
+                 Number(map[AptAnnouncementDetailsField.topAmount]) : null
         );
-    }
-
-    
-    /**
-     * AptAnnouncementByHouseType 객체를 맵 형태로 변환합니다.
-     * @returns 필드명이 키로, 값이 해당 필드의 값으로 구성된 객체
-     */
-    toMap(): { [key: string]: any } {
-        return {
-            houseManageNumber: this.houseManageNumber,
-            publicNoticeNumber: this.publicNoticeNumber,
-            modelNumber: this.modelNumber,
-            houseType: this.houseType,
-            supplyArea: this.supplyArea,
-            generalSupplyHouseholds: this.generalSupplyHouseholds,
-            specialSupplyHouseholds: this.specialSupplyHouseholds,
-            multiChildHouseholds: this.multiChildHouseholds,
-            newlywedHouseholds: this.newlywedHouseholds,
-            firstTimeHouseholds: this.firstTimeHouseholds,
-            elderlyParentSupportHouseholds: this.elderlyParentSupportHouseholds,
-            institutionRecommendedHouseholds: this.institutionRecommendedHouseholds,
-            otherSpecialHouseholds: this.otherSpecialHouseholds,
-            relocatedInstitutionHouseholds: this.relocatedInstitutionHouseholds,
-            youthHouseholds: this.youthHouseholds,
-            newbornHouseholds: this.newbornHouseholds,
-            highestSupplyPrice: this.topAmount,
-        };
     }
 }
 

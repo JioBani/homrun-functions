@@ -1,7 +1,7 @@
 import { Result } from "../../../common/result";
 import { ApplyHomeResultType } from "../type/apply_home_api.type";
 import { ApplyHomeParsingResult } from "./apply_home_parsing_result";
-import { APTInfo } from "../model/apt.model";
+import { AptInfo } from "../model/apt.model";
 
 /**
  * 청약 결과를 나타내는 클래스입니다.
@@ -61,7 +61,7 @@ export class ApplyHomeFetchResult {
         });
     }
     
-    static fromResult(result : Result<ApplyHomeResultType<APTInfo , APTInfo>>) : ApplyHomeFetchResult{
+    static fromResult(result : Result<ApplyHomeResultType<AptInfo , AptInfo>>) : ApplyHomeFetchResult{
         //#1. 기본 정보를 가져오는데 성공했는지
         if(!result.isSuccess){
             return ApplyHomeFetchResult.fromFailure("root" , result.error);

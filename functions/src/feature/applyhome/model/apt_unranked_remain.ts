@@ -2,14 +2,10 @@ import { TimeFormatter } from "../../../utils/time_formatter";
 import { APTUnrankedRemainFields as APTUnrankedRemainFields } from "../value/apt_unranked_remain.fields";
 import { Timestamp } from "firebase-admin/firestore";
 import { AptBasicInfo} from "./apt.model";
-import { ApplyHomeApiName, ApplyHomeApiUrls } from "../value/apply_home_api_urls";
+import { ApplyHomeApiUrls } from "../value/apply_home_api_urls";
 import { AptBasicInfoFactory } from "../factory/apply_heme.factory";
 
-/**
- * APT 무순위/잔여세대 분양정보를 나타내는 클래스.
- * 각 필드는 API 응답에 맞게 타입이 정의되며, Firebase Timestamp 타입을 사용합니다.
- */
-export class APTUnrankedRemain implements AptBasicInfo {
+export class AptUnrankedRemain implements AptBasicInfo {
     /**
      * 주택 관리 번호 (주택관리번호).
      */
@@ -18,7 +14,7 @@ export class APTUnrankedRemain implements AptBasicInfo {
     /**
      * 공고 번호 (공고번호).
      */
-    publicNoticeNumber: string;
+    publicAnnouncementNumber: string;
 
     /**
      * 주택명 (주택명).
@@ -33,7 +29,7 @@ export class APTUnrankedRemain implements AptBasicInfo {
     /**
      * 주택 구분 코드명 (주택구분코드명).
      */
-    houseSectionCodeName: string | null;
+    houseSectionName: string | null;
 
     /**
      * 공급 위치 우편번호 (공급위치 우편번호).
@@ -48,7 +44,7 @@ export class APTUnrankedRemain implements AptBasicInfo {
     /**
      * 공급 규모 (공급규모).
      */
-    totalSupplyHouseholdCount: number;
+    totalSupplyHouseholdCount: number | null;
 
     /**
      * 모집 공고일 (Firebase Timestamp).
@@ -77,28 +73,31 @@ export class APTUnrankedRemain implements AptBasicInfo {
 
     /**
      * 일반 공급 접수 시작일 (Firebase Timestamp).
+     * 항목구분: 옵션(0)
      */
-    generalSupplyReceptionStartDate: Timestamp | null;
+    generalSupplyReceptionStartDate: Timestamp | null; // 일반공급접수 관련 필드는 APTAnnouncementFields에 없으므로 그대로 유지
 
     /**
      * 일반 공급 접수 종료일 (Firebase Timestamp).
+     * 항목구분: 옵션(0)
      */
-    generalSupplyReceptionEndDate: Timestamp | null;
+    generalSupplyReceptionEndDate: Timestamp | null; // 일반공급접수 관련 필드는 APTAnnouncementFields에 없으므로 그대로 유지
+
 
     /**
      * 당첨자 발표일 (Firebase Timestamp).
      */
-    winnerAnnouncementDate: Timestamp | null;
+    prizeWinnerAnnouncementDate: Timestamp | null;
 
     /**
      * 계약 시작일 (Firebase Timestamp).
      */
-    contractStartDate: Timestamp | null;
+    contractConclusionStartDate: Timestamp | null;
 
     /**
      * 계약 종료일 (Firebase Timestamp).
      */
-    contractEndDate: Timestamp | null;
+    contractConclusionEndDate: Timestamp | null;
 
     /**
      * 홈페이지 주소 (홈페이지주소).
@@ -113,25 +112,25 @@ export class APTUnrankedRemain implements AptBasicInfo {
     /**
      * 문의처 (문의처).
      */
-    inquiryPhoneNumber: string | null;
+    inquiryTelephone: string | null;
 
     /**
      * 입주 예정월 (입주예정월).
      */
-    moveInPlannedYearMonth: string | null;
+    moveInPrearrangeYearMonth: string | null;
 
     /**
      * 분양정보 URL (분양정보 URL).
      */
-    announcementUrl: string | null;
+    publicAnnouncementUrl: string | null;
 
-    constructor(data : {
+    constructor(data: {
         houseManageNumber: string,
         publicAnnouncementNumber: string,
         totalSupplyHouseholdCount: number,
         houseName: string | null,
         houseSectionCode: string | null,
-        houseSectionCodeName: string | null,
+        houseSectionName: string | null,
         supplyLocationZipCode: string | null,
         supplyLocationAddress: string | null,
         recruitmentPublicAnnouncementDate: Timestamp | null,
@@ -139,23 +138,23 @@ export class APTUnrankedRemain implements AptBasicInfo {
         subscriptionReceptionEndDate: Timestamp | null,
         specialSupplyReceptionStartDate: Timestamp | null,
         specialSupplyReceptionEndDate: Timestamp | null,
-        generalSupplyReceptionStartDate: Timestamp | null,
-        generalSupplyReceptionEndDate: Timestamp | null,
-        winnerAnnouncementDate: Timestamp | null,
-        contractStartDate: Timestamp | null,
-        contractEndDate: Timestamp | null,
+        generalSupplyReceptionStartDate : Timestamp | null,
+        generalSupplyReceptionEndDate : Timestamp| null,
+        prizeWinnerAnnouncementDate: Timestamp | null,
+        contractConclusionStartDate: Timestamp | null,
+        contractConclusionEndDate: Timestamp | null,
         homepageAddress: string | null,
         businessEntityName: string | null,
-        inquiryPhoneNumber: string | null,
-        moveInPlannedYearMonth: string | null,
-        announcementUrl: string | null
+        inquiryTelephone: string | null,
+        moveInPrearrangeYearMonth: string | null,
+        publicAnnouncementUrl: string | null
     }) {
         this.houseManageNumber = data.houseManageNumber;
-        this.publicNoticeNumber = data.publicAnnouncementNumber;
+        this.publicAnnouncementNumber = data.publicAnnouncementNumber;
         this.totalSupplyHouseholdCount = data.totalSupplyHouseholdCount;
         this.houseName = data.houseName;
         this.houseSectionCode = data.houseSectionCode;
-        this.houseSectionCodeName = data.houseSectionCodeName;
+        this.houseSectionName = data.houseSectionName;
         this.supplyLocationZipCode = data.supplyLocationZipCode;
         this.supplyLocationAddress = data.supplyLocationAddress;
         this.recruitmentPublicAnnouncementDate = data.recruitmentPublicAnnouncementDate;
@@ -165,92 +164,49 @@ export class APTUnrankedRemain implements AptBasicInfo {
         this.specialSupplyReceptionEndDate = data.specialSupplyReceptionEndDate;
         this.generalSupplyReceptionStartDate = data.generalSupplyReceptionStartDate;
         this.generalSupplyReceptionEndDate = data.generalSupplyReceptionEndDate;
-        this.winnerAnnouncementDate = data.winnerAnnouncementDate;
-        this.contractStartDate = data.contractStartDate;
-        this.contractEndDate = data.contractEndDate;
+        this.prizeWinnerAnnouncementDate = data.prizeWinnerAnnouncementDate;
+        this.contractConclusionStartDate = data.contractConclusionStartDate;
+        this.contractConclusionEndDate = data.contractConclusionEndDate;
         this.homepageAddress = data.homepageAddress;
         this.businessEntityName = data.businessEntityName;
-        this.inquiryPhoneNumber = data.inquiryPhoneNumber;
-        this.moveInPlannedYearMonth = data.moveInPlannedYearMonth;
-        this.announcementUrl = data.announcementUrl;
+        this.inquiryTelephone = data.inquiryTelephone;
+        this.moveInPrearrangeYearMonth = data.moveInPrearrangeYearMonth;
+        this.publicAnnouncementUrl = data.publicAnnouncementUrl;
     }
 
-    getApiName(): ApplyHomeApiName {
-        return ApplyHomeApiName.UnrankedRemain;
-    }
-    
-    /**
-     * 주어진 객체로부터 APTUnrankedRemainHouseDetail 객체를 생성합니다.
-     * Firebase Timestamp로 변환할 수 있는 필드들은 TimeFormatter를 이용해 변환합니다.
-     * @param map 객체로부터 데이터를 읽어와서 APTUnrankedRemainHouseDetail 인스턴스를 생성합니다.
-     * @returns APTUnrankedRemainHouseDetail 인스턴스
-     */
-    static fromMap(map: { [key: string]: any }): APTUnrankedRemain {
-        return new APTUnrankedRemain({
+    static fromMap(map: { [key: string]: any }): AptUnrankedRemain {
+        return new AptUnrankedRemain({
             houseManageNumber: map[APTUnrankedRemainFields.houseManageNumber],
             publicAnnouncementNumber: map[APTUnrankedRemainFields.publicAnnouncementNumber],
             houseName: map[APTUnrankedRemainFields.houseName] ?? null,
             houseSectionCode: map[APTUnrankedRemainFields.houseSectionCode] ?? null,
-            houseSectionCodeName: map[APTUnrankedRemainFields.houseSectionCodeName] ?? null,
+            houseSectionName: map[APTUnrankedRemainFields.houseSectionName] ?? null,
             supplyLocationZipCode: map[APTUnrankedRemainFields.supplyLocationZipCode] ?? null,
             supplyLocationAddress: map[APTUnrankedRemainFields.supplyLocationAddress] ?? null,
-            totalSupplyHouseholdCount: map[APTUnrankedRemainFields.totalSupplyHouseholdCount],
+            totalSupplyHouseholdCount: map[APTUnrankedRemainFields.totalSupplyHouseholdCount] ?? null,
             recruitmentPublicAnnouncementDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTUnrankedRemainFields.recruitmentPublicAnnouncementDate] as string) ?? null,
             subscriptionReceptionStartDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTUnrankedRemainFields.subscriptionReceptionStartDate] as string) ?? null,
             subscriptionReceptionEndDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTUnrankedRemainFields.subscriptionReceptionEndDate] as string) ?? null,
             specialSupplyReceptionStartDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTUnrankedRemainFields.specialSupplyReceptionStartDate] as string) ?? null,
-            specialSupplyReceptionEndDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTUnrankedRemainFields.specialSupplyReceptionEndDate] as string)?? null,
-            generalSupplyReceptionStartDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTUnrankedRemainFields.generalSupplyReceptionStartDate] as string) ?? null,
-            generalSupplyReceptionEndDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTUnrankedRemainFields.generalSupplyReceptionEndDate] as string) ?? null,
-            winnerAnnouncementDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTUnrankedRemainFields.winnerAnnouncementDate] as string) ?? null,
-            contractStartDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTUnrankedRemainFields.contractStartDate] as string) ?? null,
-            contractEndDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTUnrankedRemainFields.contractEndDate] as string) ?? null,
+            specialSupplyReceptionEndDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTUnrankedRemainFields.specialSupplyReceptionEndDate] as string) ?? null,
+            generalSupplyReceptionStartDate : TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTUnrankedRemainFields.generalSupplyReceptionStartDate] as string) ?? null,
+            generalSupplyReceptionEndDate : TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTUnrankedRemainFields.generalSupplyReceptionEndDate] as string) ?? null,
+            prizeWinnerAnnouncementDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTUnrankedRemainFields.prizeWinnerAnnouncementDate] as string) ?? null,
+            contractConclusionStartDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTUnrankedRemainFields.contractConclusionStartDate] as string) ?? null,
+            contractConclusionEndDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTUnrankedRemainFields.contractConclusionEndDate] as string) ?? null,
             homepageAddress: map[APTUnrankedRemainFields.homepageAddress] ?? null,
             businessEntityName: map[APTUnrankedRemainFields.businessEntityName] ?? null,
-            inquiryPhoneNumber: map[APTUnrankedRemainFields.inquiryPhoneNumber] ?? null,
-            moveInPlannedYearMonth: map[APTUnrankedRemainFields.moveInPlannedYearMonth] ?? null,
-            announcementUrl: map[APTUnrankedRemainFields.announcementUrl] ?? null,
+            inquiryTelephone: map[APTUnrankedRemainFields.inquiryTelephone] ?? null,
+            moveInPrearrangeYearMonth: map[APTUnrankedRemainFields.moveInPrearrangeYearMonth] ?? null,
+            publicAnnouncementUrl: map[APTUnrankedRemainFields.publicAnnouncementUrl] ?? null,
         });
-    }
-
-    /**
-     * 현재 객체를 맵으로 변환합니다.
-     * @returns 객체의 데이터가 담긴 맵
-     */
-    toMap(): { [key: string]: any } {
-        return {
-            houseManageNumber: this.houseManageNumber,
-            publicAnnouncementNumber: this.publicNoticeNumber,
-            houseName: this.houseName,
-            houseSectionCode: this.houseSectionCode,
-            houseSectionCodeName: this.houseSectionCodeName,
-            supplyLocationZipCode: this.supplyLocationZipCode,
-            supplyLocationAddress: this.supplyLocationAddress,
-            totalSupplyHouseholdCount: this.totalSupplyHouseholdCount,
-            recruitmentPublicAnnouncementDate: this.recruitmentPublicAnnouncementDate,
-            subscriptionReceptionStartDate: this.subscriptionReceptionStartDate,
-            subscriptionReceptionEndDate: this.subscriptionReceptionEndDate,
-            specialSupplyReceptionStartDate: this.specialSupplyReceptionStartDate,
-            specialSupplyReceptionEndDate: this.specialSupplyReceptionEndDate,
-            generalSupplyReceptionStartDate: this.generalSupplyReceptionStartDate,
-            generalSupplyReceptionEndDate: this.generalSupplyReceptionEndDate,
-            winnerAnnouncementDate: this.winnerAnnouncementDate,
-            contractStartDate: this.contractStartDate,
-            contractEndDate: this.contractEndDate,
-            homepageAddress: this.homepageAddress,
-            businessEntityName: this.businessEntityName,
-            inquiryPhoneNumber: this.inquiryPhoneNumber,
-            moveInPlannedYearMonth: this.moveInPlannedYearMonth,
-            announcementUrl: this.announcementUrl
-        };
     }
 }
 
-
-export class APTUnrankedRemainFactory implements AptBasicInfoFactory<APTUnrankedRemain>{
-    fromMap(map: { [key: string]: any; }): APTUnrankedRemain {
-        return APTUnrankedRemain.fromMap(map);
-    }    
+export class AptUnrankedRemainFactory implements AptBasicInfoFactory<AptUnrankedRemain> {
+    fromMap(map: { [key: string]: any }): AptUnrankedRemain {
+        return AptUnrankedRemain.fromMap(map);
+    }
 
     getApiUrl(startDate: Date): string {
         return ApplyHomeApiUrls.getUnrankedRemain(startDate);

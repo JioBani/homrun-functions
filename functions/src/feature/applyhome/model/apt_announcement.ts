@@ -6,7 +6,7 @@ import { AptBasicInfoFactory } from "../factory/apply_heme.factory";
 import { ApplyHomeApiUrls } from "../value/apply_home_api_urls";
 
 //TODO string | null 형 필드에 undefind가 들어갔을때 정상적으로 firebase에 저장되는지 확인 필요함
-export class APTAnnouncement implements AptBasicInfo{
+export class AptAnnouncement implements AptBasicInfo{
   /**
    * 주택관리번호
    * @type {string}
@@ -17,7 +17,7 @@ export class APTAnnouncement implements AptBasicInfo{
    * 공고번호
    * @type {string}
    */
-  publicNoticeNumber: string;
+  publicAnnouncementNumber: string;
 
   /**
    * 주택 구분 코드
@@ -157,6 +157,18 @@ export class APTAnnouncement implements AptBasicInfo{
    */
   generalRank2CorrespondingAreaReceptionEndDate: Timestamp | null;
 
+    /**
+   * 2순위 기타지역 접수 시작일 (Firebase Timestamp)
+   * @type {Timestamp | null}
+   */
+    generalRank2OtherAreaReceptionStartDate : Timestamp | null;
+
+    /**
+     * 2순위 기타지역 접수종료일 (Firebase Timestamp)
+     * @type {Timestamp | null}
+     */
+    generalRank2OtherAreaReceptionEndDate : Timestamp | null;
+
   /**
    * 당첨자 발표일 (Firebase Timestamp)
    * @type {Timestamp | null}
@@ -261,7 +273,7 @@ export class APTAnnouncement implements AptBasicInfo{
 
   constructor(data: { 
     houseManageNumber: string;
-    publicNoticeNumber: string;
+    publicAnnouncementNumber: string;
     houseSectionCode?: string | null;
     subscriptionAreaName?: string | null;
     recruitmentPublicAnnouncementDate?: Timestamp | null;
@@ -285,6 +297,8 @@ export class APTAnnouncement implements AptBasicInfo{
     generalRank1OtherAreaReceptionEndDate?: Timestamp | null;
     generalRank2CorrespondingAreaReceptionStartDate?: Timestamp | null;
     generalRank2CorrespondingAreaReceptionEndDate?: Timestamp | null;
+    generalRank2OtherAreaReceptionStartDate ?: Timestamp | null;
+    generalRank2OtherAreaReceptionEndDate ?: Timestamp | null;
     prizeWinnerAnnouncementDate?: Timestamp | null;
     contractConclusionStartDate?: Timestamp | null;
     contractConclusionEndDate?: Timestamp | null;
@@ -304,7 +318,7 @@ export class APTAnnouncement implements AptBasicInfo{
     publicAnnouncementUrl?: string | null;
 }) {
   this.houseManageNumber = data.houseManageNumber;
-  this.publicNoticeNumber = data.publicNoticeNumber;
+  this.publicAnnouncementNumber = data.publicAnnouncementNumber;
   this.houseSectionCode = data.houseSectionCode ?? null;
   this.subscriptionAreaName = data.subscriptionAreaName ?? null;
   this.recruitmentPublicAnnouncementDate = data.recruitmentPublicAnnouncementDate ?? null;
@@ -328,6 +342,8 @@ export class APTAnnouncement implements AptBasicInfo{
   this.generalRank1OtherAreaReceptionEndDate = data.generalRank1OtherAreaReceptionEndDate ?? null;
   this.generalRank2CorrespondingAreaReceptionStartDate = data.generalRank2CorrespondingAreaReceptionStartDate ?? null;
   this.generalRank2CorrespondingAreaReceptionEndDate = data.generalRank2CorrespondingAreaReceptionEndDate ?? null;
+  this.generalRank2OtherAreaReceptionStartDate  = data.generalRank2OtherAreaReceptionStartDate  ?? null;
+  this.generalRank2OtherAreaReceptionEndDate  = data.generalRank2OtherAreaReceptionEndDate  ?? null;
   this.prizeWinnerAnnouncementDate = data.prizeWinnerAnnouncementDate ?? null;
   this.contractConclusionStartDate = data.contractConclusionStartDate ?? null;
   this.contractConclusionEndDate = data.contractConclusionEndDate ?? null;
@@ -349,7 +365,7 @@ export class APTAnnouncement implements AptBasicInfo{
 
   
 
-  static fromMap(map: { [key: string]: any }): APTAnnouncement {
+  static fromMap(map: { [key: string]: any }): AptAnnouncement {
     const houseManageNumber = map[APTAnnouncementFields.houseManageNumber] as string;
 
     if(houseManageNumber == null){
@@ -362,10 +378,10 @@ export class APTAnnouncement implements AptBasicInfo{
       throw Error('[APTAnnouncement.fromMap()] publicAnnouncementNumber 가 null 또는 undefind 입니다.');
     }
     
-    return new APTAnnouncement(
+    return new AptAnnouncement(
       {
       houseManageNumber: houseManageNumber,
-      publicNoticeNumber: publicAnnouncementNumber,
+      publicAnnouncementNumber: publicAnnouncementNumber,
       houseSectionCode: map[APTAnnouncementFields.houseSectionCode] as string,
       subscriptionAreaName: map[APTAnnouncementFields.subscriptionAreaName] as string,
       recruitmentPublicAnnouncementDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTAnnouncementFields.recruitmentPublicAnnouncementDate] as string),
@@ -389,6 +405,8 @@ export class APTAnnouncement implements AptBasicInfo{
       generalRank1OtherAreaReceptionEndDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTAnnouncementFields.generalRank1OtherAreaReceptionEndDate] as string),
       generalRank2CorrespondingAreaReceptionStartDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTAnnouncementFields.generalRank2CorrespondingAreaReceptionStartDate] as string),
       generalRank2CorrespondingAreaReceptionEndDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTAnnouncementFields.generalRank2CorrespondingAreaReceptionEndDate] as string),
+      generalRank2OtherAreaReceptionStartDate : TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTAnnouncementFields.generalRank2OtherAreaReceptionStartDate] as string),
+      generalRank2OtherAreaReceptionEndDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTAnnouncementFields.generalRank2OtherAreaReceptionEndDate] as string),
       prizeWinnerAnnouncementDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTAnnouncementFields.prizeWinnerAnnouncementDate] as string),
       contractConclusionStartDate: TimeFormatter.trySleshStringToFirebaseTimestamp(map[APTAnnouncementFields.contractConclusionStartDate] as string),
       contractConclusionEndDate: TimeFormatter.sleshStringToFirebaseTimestamp(map[APTAnnouncementFields.contractConclusionEndDate] as string),
@@ -407,76 +425,12 @@ export class APTAnnouncement implements AptBasicInfo{
       publicHousingSpecialLawApplication: map[APTAnnouncementFields.publicHousingSpecialLawApplication] as string,
       publicAnnouncementUrl: map[APTAnnouncementFields.publicAnnouncementUrl] as string,
     });
-  }
-
-  toMap(): { [key: string]: any } {
-    return {
-      [APTAnnouncementFields.houseManageNumber]: this.houseManageNumber,
-      [APTAnnouncementFields.publicAnnouncementNumber]: this.publicNoticeNumber,
-      [APTAnnouncementFields.houseSectionCode]: this.houseSectionCode,
-      [APTAnnouncementFields.subscriptionAreaName]: this.subscriptionAreaName,
-      [APTAnnouncementFields.recruitmentPublicAnnouncementDate]: this.recruitmentPublicAnnouncementDate,
-      [APTAnnouncementFields.houseName]: this.houseName,
-      [APTAnnouncementFields.houseSectionName]: this.houseSectionName,
-      [APTAnnouncementFields.houseDetailSectionCode]: this.houseDetailSectionCode,
-      [APTAnnouncementFields.houseDetailSectionName]: this.houseDetailSectionName,
-      [APTAnnouncementFields.rentalSectionCode]: this.rentalSectionCode,
-      [APTAnnouncementFields.rentalSectionName]: this.rentalSectionName,
-      [APTAnnouncementFields.subscriptionAreaCode]: this.subscriptionAreaCode,
-      [APTAnnouncementFields.supplyLocationZipCode]: this.supplyLocationZipCode,
-      [APTAnnouncementFields.supplyLocationAddress]: this.supplyLocationAddress,
-      [APTAnnouncementFields.totalSupplyHouseholdCount]: this.totalSupplyHouseholdCount,
-      [APTAnnouncementFields.subscriptionReceptionStartDate]: this.subscriptionReceptionStartDate,
-      [APTAnnouncementFields.subscriptionReceptionEndDate]: this.subscriptionReceptionEndDate,
-      [APTAnnouncementFields.specialSupplyReceptionStartDate]: this.specialSupplyReceptionStartDate,
-      [APTAnnouncementFields.specialSupplyReceptionEndDate]: this.specialSupplyReceptionEndDate,
-      [APTAnnouncementFields.generalRank1CorrespondingAreaReceptionStartDate]: this.generalRank1CorrespondingAreaReceptionStartDate,
-      [APTAnnouncementFields.generalRank1CorrespondingAreaReceptionEndDate]: this.generalRank1CorrespondingAreaReceptionEndDate,
-      [APTAnnouncementFields.generalRank1OtherAreaReceptionStartDate]: this.generalRank1OtherAreaReceptionStartDate,
-      [APTAnnouncementFields.generalRank1OtherAreaReceptionEndDate]: this.generalRank1OtherAreaReceptionEndDate,
-      [APTAnnouncementFields.generalRank2CorrespondingAreaReceptionStartDate]: this.generalRank2CorrespondingAreaReceptionStartDate,
-      [APTAnnouncementFields.generalRank2CorrespondingAreaReceptionEndDate]: this.generalRank2CorrespondingAreaReceptionEndDate,
-      [APTAnnouncementFields.prizeWinnerAnnouncementDate]: this.prizeWinnerAnnouncementDate,
-      [APTAnnouncementFields.contractConclusionStartDate]: this.contractConclusionStartDate,
-      [APTAnnouncementFields.contractConclusionEndDate]: this.contractConclusionEndDate,
-      [APTAnnouncementFields.homepageAddress]: this.homepageAddress,
-      [APTAnnouncementFields.constructionEnterpriseName]: this.constructionEnterpriseName,
-      [APTAnnouncementFields.inquiryTelephone]: this.inquiryTelephone,
-      [APTAnnouncementFields.businessEntityName]: this.businessEntityName,
-      [APTAnnouncementFields.moveInPrearrangeYearMonth]: this.moveInPrearrangeYearMonth,
-      [APTAnnouncementFields.speculationOverheatedDistrict]: this.speculationOverheatedDistrict,
-      [APTAnnouncementFields.marketAdjustmentTargetAreaSection]: this.marketAdjustmentTargetAreaSection,
-      [APTAnnouncementFields.priceCapApplication]: this.priceCapApplication,
-      [APTAnnouncementFields.redevelopmentBusiness]: this.redevelopmentBusiness,
-      [APTAnnouncementFields.publicHousingDistrict]: this.publicHousingDistrict,
-      [APTAnnouncementFields.largeScaleDevelopmentDistrict]: this.largeScaleDevelopmentDistrict,
-      [APTAnnouncementFields.capitalRegionPrivatePublicHousingDistrict]: this.capitalRegionPrivatePublicHousingDistrict,
-      [APTAnnouncementFields.publicHousingSpecialLawApplication]: this.publicHousingSpecialLawApplication,
-      [APTAnnouncementFields.publicAnnouncementUrl]: this.publicAnnouncementUrl,
-    };
-  }
-
-  /** 
-   * toMap중에 undefind를 null로 바꿔서 반환
-   * */ 
-  toMapWithNull(): { [key: string]: any } { 
-
-    const convertUndefinedToNull = (obj: any) => {
-        return Object.fromEntries(
-            Object.entries(obj).map(([k, v]) => [k, v === undefined ? null : v])
-        );
-    };
-  
-    let map = this.toMap();
-  
-    return convertUndefinedToNull(map);
-  }
-  
+  }  
 }
 
-export class APTAnnouncementFactory implements AptBasicInfoFactory<APTAnnouncement>{
-  fromMap(map: { [key: string]: any; }): APTAnnouncement {
-      return APTAnnouncement.fromMap(map);
+export class AptAnnouncementFactory implements AptBasicInfoFactory<AptAnnouncement>{
+  fromMap(map: { [key: string]: any; }): AptAnnouncement {
+      return AptAnnouncement.fromMap(map);
   }    
 
   getApiUrl(startDate: Date): string {

@@ -110,31 +110,6 @@ export class ApplyHomeApiController{
       });
   });
 
-    getApt = withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
-      const currentDate = new Date();
-      currentDate.setMonth(currentDate.getMonth() - 2);
-
-      //const {index} = request.body;
-
-      //const aptList = await this.applyHomeApiService.getAPTAnnouncementList(currentDate);
-
-      // if(aptList.isSuccess){
-      //   const detail = await this.applyHomeApiService.getAptAnnouncementByHouseTypeList(aptList.data![index]!);
-      //   return new ApiResponse({
-      //     status: 200,
-      //     data: {
-      //       info : aptList.data![index]!,
-      //       details : detail.data
-      //     }
-      //   });
-      // }
-
-      return new ApiResponse({
-        status: 200,
-        data: null
-      });
-    });
-
     getAptAnnnouncement = withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
       const currentDate = new Date();
       currentDate.setMonth(currentDate.getMonth() - 2);      
