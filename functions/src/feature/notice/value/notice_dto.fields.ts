@@ -10,4 +10,6 @@ export const NoticeDtoFields = {
     recruitmentPublicAnnouncementDate : "recruitmentPublicAnnouncementDate", /// 모집 공고일
     aptAnnouncementByTypeList : "aptAnnouncementByTypeList", //#. 유형별 세부 정보
     supplyMethod : "supplyMethod",
+    region : "region",
+    detailRegion : "detailRegion"
 };
