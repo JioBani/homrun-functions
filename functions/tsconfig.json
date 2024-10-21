@@ -8,11 +8,7 @@
     "strict": true,
     "target": "es2017",
     "baseUrl": ".", 
-    "paths": {
-      "@/*": [  
-        "src/*"
-      ]
-    },
+    "paths": {},
     "resolveJsonModule": true,
   },
   "compileOnSave": true,
