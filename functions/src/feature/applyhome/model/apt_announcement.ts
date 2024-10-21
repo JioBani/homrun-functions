@@ -26,12 +26,6 @@ export class AptAnnouncement implements AptBasicInfo{
   houseSectionCode: string | null;
 
   /**
-   * 공급 지역명
-   * @type {string | null;}
-   */
-  subscriptionAreaName: string | null;
-
-  /**
    * 모집 공고일 (Firebase Timestamp)
    * @type {Timestamp | null}
    */
@@ -73,11 +67,16 @@ export class AptAnnouncement implements AptBasicInfo{
    */
   rentalSectionName: string | null;
 
+  
   /**
    * 공급 지역 코드
-   * @type {string | null}
    */
   subscriptionAreaCode: string | null;
+
+  /**
+   * 공급 지역명
+   */
+  subscriptionAreaName: string | null;
 
   /**
    * 공급 위치 우편번호

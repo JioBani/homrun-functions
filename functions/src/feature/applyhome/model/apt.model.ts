@@ -36,6 +36,13 @@ export interface AptBasicInfo extends AptInfo{
     * 청약 접수 종료일 (Firebase Timestamp).
     */
     subscriptionReceptionEndDate: Timestamp | null;
+
+    
+    /**
+     * 공급 위치 주소
+     * @type {string | null}
+     */
+    supplyLocationAddress: string | null;
 }
 
 
