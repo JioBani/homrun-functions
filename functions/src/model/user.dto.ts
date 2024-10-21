@@ -1,5 +1,5 @@
-import { Gender } from "@/enum/gender.enum";
-import { SocialProvider } from "@/enum/social-provider.enum";
+import { Gender } from "../enum/gender.enum";
+import { SocialProvider } from "../enum/social-provider.enum";
 import { Timestamp } from "firebase-admin/firestore";
 
 export class UserDto{
