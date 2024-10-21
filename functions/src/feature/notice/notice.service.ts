@@ -2,7 +2,7 @@ import { DecodedIdToken } from "firebase-admin/auth";
 import { NoticeReferences } from "./notice.refernces";
 import { NoticeDtoFields } from "./value/notice_dto.fields";
 import * as firebaseAdmin from 'firebase-admin';
-import { Timestamp } from "firebase-admin/firestore";
+import { DocumentSnapshot, QuerySnapshot, Timestamp } from "firebase-admin/firestore";
 import { LikeFields } from "./value/like.fields";
 import {  NotFoundError } from "../../error/http.error";
 import { FieldValue } from 'firebase-admin/firestore';
@@ -11,10 +11,13 @@ import { ApplyHommeApiService } from "../applyhome/applyhome_api.service";
 import { ApplyHomeDto } from "../applyhome/model/apply_home.dto";
 import { SupplyMethod } from "../applyhome/value/supply_method.enum";
 import { ApplyHomeResult } from "../applyhome/common/apply_home_result";
+import { GeminiApiService } from "../gemini_api/gemini_api.service";
+
 export class NoticeService{
 
     constructor(
-        private applyHomeApiService : ApplyHommeApiService
+        private applyHomeApiService : ApplyHommeApiService,
+        private geminiApiService  : GeminiApiService
     ){}
 
     private noticeCollection = NoticeReferences.getNoticeCollection();
@@ -95,6 +98,7 @@ export class NoticeService{
     //#region 공고 문서 업데이트
 
     //#. 공고 업데이트
+    //TODO 시간으로 가져오는거 오류있음
     async updateAptInfo(){
         const currentDate = new Date();
         currentDate.setMonth(currentDate.getMonth() - 2);
@@ -131,12 +135,94 @@ export class NoticeService{
     }
 
 
+    //#. 주소를 시도, 시군구로 파싱하여 업데이트
+    async updateAddress(){
+        const begin = new Date().getMilliseconds();
+
+        const querySnapshot : QuerySnapshot = await this.noticeCollection.get();
+        const updateNeededList: DocumentSnapshot[] = [];
+
+        querySnapshot.docs.forEach((doc) => {
+            if (doc.data()?.region == null && doc.data()?.detailRegion == null) {
+                updateNeededList.push(doc);
+            }
+        });
+
+
+        //#. 리스트 분할
+        const chunkSize = 50;
+        const chunkedList: DocumentSnapshot[][] = [];
+        const errors : string[] = [];
+    
+        for (let i = 0; i < updateNeededList.length; i += chunkSize) {
+            const chunk = updateNeededList.slice(i, i + chunkSize);
+            chunkedList.push(chunk);
+        }
+
+        //#. 요청
+        for (const chunk of chunkedList) {
+            const addressList: Array<string> = chunk.map((snapshot) => {
+                return snapshot.data()?.info.basicInfo.supplyLocationAddress ?? '';
+            });
+    
+            // 파싱 부분은 순차 처리
+            const parsingResult = await this.geminiApiService.parseAddressList(addressList);
+    
+            if (parsingResult.isSuccess) {
+
+                //#. 병렬로 문서 업데이트
+                const updatePromises = parsingResult.data!.map((parsedAddress, index) => {
+                    const doc = chunk[index];
+    
+                    if (parsedAddress) {
+                        const updateData = {
+                            region: parsedAddress.시도,
+                            detailRegion: parsedAddress.시군구,
+                        };
+    
+                        // Firestore 문서 업데이트 비동기 작업 생성
+                        return doc.ref.update(updateData);
+                    }
+    
+                    return Promise.resolve(); // 아무것도 업데이트할 필요가 없는 경우
+                });
+    
+                // 모든 업데이트 작업을 병렬로 실행
+                await Promise.all(updatePromises);
+            } else {
+                errors.push(`${parsingResult.error}`);
+            }
+        }
+
+        const end = new Date().getMilliseconds();
+
+        //#. 결과 로깅
+        await firebaseAdmin.firestore().collection('notice_address_update').add({
+            "date" : Timestamp.now(),
+            "totalDoc" : querySnapshot.docs.length,
+            "updatedNeeded" : updateNeededList.length,
+            "chunkLength" : chunkedList.length,
+            "error" : errors,
+            "time" : end - begin,
+        });
+
+        return {
+            date : Timestamp.now(),
+            totalDoc : querySnapshot.docs.length,
+            updatedNeeded : updateNeededList.length,
+            chunkLength : chunkedList.length,
+            error : errors,
+            time : end - begin,
+        };
+    }
+
     //#. API 결과를 이용해서 Firebase에 공고를 업로드하고 결과를 저장
     async updateAptInfoByApplyHomeResult(result : ApplyHomeResult , supplyMethod : SupplyMethod){
         let uploadResult = null;
 
         //#. 공고 업로드하기
         if(result.data != null){
+            console.time(`[NoticeService.updateAptInfoByApplyHomeResult()] ${supplyMethod}`);
             uploadResult = await Promise.all(result.data.map(async dto =>{
                 if(dto != null){
                     return await this.uploadAptDto(dto , supplyMethod);
@@ -145,6 +231,7 @@ export class NoticeService{
                     return null;
                 }
             }));
+            console.timeEnd(`[NoticeService.updateAptInfoByApplyHomeResult()] ${supplyMethod}`);
         }
 
         //#. 결과 저장하기
@@ -169,11 +256,8 @@ export class NoticeService{
 
             const doc = this.noticeCollection.doc(applyHomeDto.basicInfo.publicAnnouncementNumber);
 
-            let isUpdate = false;
+            const documentSnapshot : DocumentSnapshot = await doc.get();
 
-            //#. 문서가 있으면 업데이트로 
-            isUpdate = (await doc.get()).exists;
-            
             await this.noticeCollection.doc(applyHomeDto.basicInfo.publicAnnouncementNumber).set({
                 [NoticeDtoFields.noticeId] : applyHomeDto.basicInfo.publicAnnouncementNumber,
                 [NoticeDtoFields.views] : 0,  //#. 조회수
@@ -184,11 +268,13 @@ export class NoticeService{
                 [NoticeDtoFields.recruitmentPublicAnnouncementDate] : applyHomeDto.basicInfo.recruitmentPublicAnnouncementDate,
                 [NoticeDtoFields.supplyMethod] : supplyMethod,
                 [NoticeDtoFields.info] :applyHomeDto.toMapWithTimeStamp(), //#. 공고
+                [NoticeDtoFields.region] : null,
+                [NoticeDtoFields.detailRegion] : null,
             });
 
             return {
                 publicNoticeNumber : applyHomeDto.basicInfo.publicAnnouncementNumber,
-                result : isUpdate ? "updated" : "generated"
+                result : documentSnapshot.exists ? "updated" : "generated",
             };
         }catch(e){
             logger.error(e);
@@ -198,205 +284,4 @@ export class NoticeService{
             };
         }           
     }
-
-
-    //#endregion
-
-
-    // /**
-    //  * 공고 문서를 생성하는 함수
-    //  * 
-    //  * @param noticeCollection - 파이어베이스 컬렉션 참조
-    //  * @param aptAnnouncement - APT 분양 공고 객체 (null일 수 있음)
-    //  * 
-    //  * @returns 문서 생성 결과 객체 배열을 반환
-    //  * 
-    //  * - aptAnnouncement가 null이면 오류를 반환
-    //  * - 주택 유형별 세부 정보를 가져온 후, 이를 가공하여 문서를 작성
-    //  * - 파이어베이스에 문서를 저장하고 성공 여부를 반환
-    //  * - 오류가 발생할 경우, 문서 생성 실패 결과를 반환
-    //  */
-    // private async makeNoticeDocumentByAnnouncement(
-    //     noticeCollection : CollectionReference, 
-    //     aptAnnouncement : APTAnnouncement | null
-    // ) : Promise<NoticeDocumentResult>{
-
-    //     //#. aptAnnouncement가 null이면 반환
-    //     if(aptAnnouncement === null){
-    //         return NoticeDocumentResult.fromAllFailure({
-    //             noticeId : null,
-    //             error : Error("[NoticeService.makeNoticeDocument()] aptAnnouncement 가 null 임")
-    //         });
-    //     }
-
-    //     //#. 문서가 있는지 확인
-    //     const noticeId : string = aptAnnouncement.publicNoticeNumber;     
-    //     const doc = await noticeCollection.doc(noticeId).get();
-    //     const isDocExist = doc.exists;
-
-
-    //     //#1. 주택 유형별 세부정보 가져오기        
-    //     const detailsResult = await this.applyHomeApiService.getAptAnnouncementByHouseTypeList(aptAnnouncement);
-
-    //     if(!detailsResult.isSuccess){
-    //         //#. 주택 유형별 세부정보를 가져오지 못했으면 데이터 없이 문서 만들기 진행
-    //         logger.error(`[NoticeService.makeNoticeDocument()] 주택 유형별 세부정보 가져오기 중 오류\n${detailsResult.error}`);
-    //     }
-
-    //     //#2. 주택 유형별 정보 가공 데이터 제작
-    //     let processedByHouseType : ProcessedAPTAnnouncementByHouseType | null;
-
-    //     const detailsHasParsingError : boolean = detailsResult.data!.some(parsingResult => parsingResult.hasError);
-
-    //     if(detailsHasParsingError){
-    //         processedByHouseType = null;
-    //     }
-    //     else{
-    //         processedByHouseType = ProcessedAPTAnnouncementByHouseType.fromData({
-    //             announcementByHouseTypeList : detailsResult.data!.map((parsingReuslt) => parsingReuslt.data),
-    //             totalSupplyHouseholdCount : aptAnnouncement.totalSupplyHouseholdCount
-    //         });
-    //     }
-
-    //     //#3. 파이어베이스에 업로드       
-    //     try{
-    //         await noticeCollection.doc(noticeId).set({
-    //             [NoticeDtoFields.noticeId] : noticeId,
-    //             [NoticeDtoFields.views] : 0,  //#. 조회수
-    //             [NoticeDtoFields.likes] : 0,  //#. 좋아요
-    //             [NoticeDtoFields.scraps] : 0, //#. 스크랩 수
-    //             [NoticeDtoFields.houseName] : aptAnnouncement.houseName, //#. 아파트 이름
-    //             [NoticeDtoFields.applicationReceptionStartDate] : aptAnnouncement.subscriptionReceptionStartDate,
-    //             [NoticeDtoFields.recruitmentPublicAnnouncementDate] : aptAnnouncement.recruitmentPublicAnnouncementDate,
-    //             [NoticeDtoFields.info] : aptAnnouncement.toMapWithNull(), //#. 공고
-    //             [NoticeDtoFields.aptAnnouncementByTypeList] : detailsResult.data?.map((e)=>e?.data?.toMap()),
-    //             [NoticeDtoFields.processedAPTAnnouncementByHouseType]  : processedByHouseType?.toMap() ?? null
-    //         });
-
-    //         //#. 결과 리턴
-    //         return new NoticeDocumentResult({
-    //             noticeId : noticeId,
-    //             isSuccess : true,
-    //             isGenerated : !isDocExist,
-    //             isUpdated : isDocExist,
-    //             isByHouseTypeInfoSuccess : !detailsHasParsingError,
-    //             isProcessedAPTAnnouncementByHouseTypeSuccess : processedByHouseType != null,
-    //             isProcessedAPTAnnouncementByHouseTypeHasCountError : processedByHouseType?.hasSupplyHouseholdsCountError ?? false
-    //         });
-
-    //     }catch(e){
-    //         logger.error(`[NoticeService.makeNoticeDocument()] ${e}\n`);
-    //         return NoticeDocumentResult.fromAllFailure({
-    //             noticeId : noticeId,
-    //             error : e
-    //         });
-    //     }
-        
-    // } 
-
-
-    // /**
-    //  *  청약홈 분양정보 조회 서비스 API 에서 2개월 전부터의 공고를 가져와 문서를 생성하는 함수
-    //  * 
-    //  * @returns 공고 생성 결과에 대한 로그 메시지를 반환
-    //  * 
-    //  * - 현재로부터 두 달 전의 공고 데이터를 가져와서 각각 문서를 생성
-    //  * - 각 공고에 대해 문서를 만들고, 결과를 수집한 후 로그를 생성하여 반환
-    //  */
-    // async makeNoticeDocuments(){        
-    //     const noticeCollection = NoticeReferences.getNoticeCollection();
-        
-    //     //#1. 공고 가져오기
-    //     //#. 현재로부터 두달전의 공고부터 가져옴
-    //     const currentDate = new Date();
-    //     currentDate.setMonth(currentDate.getMonth() - 2);
-        
-
-    //     const announcementResult = await this.applyHomeApiService.getAPTAnnouncementList(currentDate); 
-
-    //     if(!announcementResult.isSuccess){
-    //         logger.error(`[NoticeService.makeNoticeDocuments()] APT 분양정보 상세조회 가져오기 중 오류\n${announcementResult.error}`);
-    //         throw announcementResult.error;
-    //     }
-
-    //     const data = announcementResult.data!;
-
-    //     //#2. 가져온 공고마다 문서 만들기        
-    //     const result : Array<NoticeDocumentResult> = await Promise.all<NoticeDocumentResult>(data.map((item)=>
-    //         this.makeNoticeDocumentByAnnouncement(noticeCollection , item.data)
-    //     ));
-
-    //     //#3. 결과 로그 생성
-    //     const resultLog = this.makeNoticeUpdateLog(
-    //         result,
-    //         data.length,
-    //         currentDate.toISOString().split('T')[0]
-    //     )
-
-    //     logger.log(`[NoticeService.makeNoticeDocuments()]\n${JSON.stringify(resultLog)}`);    
-
-    //     return resultLog;
-    // }
-
-
-    // /**
-    //  * 공고 생성 결과 로그를 생성하는 함수
-    //  * 
-    //  * @param result - 각 공고 문서 생성에 대한 결과 리스트
-    //  * @param totalCount - 총 공고 개수
-    //  * @param startDateString - 공고 조회 시작 날짜 (포맷: YYYY-MM-DD)
-    //  * 
-    //  * @returns 업데이트 로그 객체 반환
-    //  * 
-    //  * - 실패한 공고 수, 추가된 문서 수, 업데이트된 문서 수 등 각종 통계 정보를 기반으로 로그를 생성
-    //  */
-    // private makeNoticeUpdateLog(
-    //     result : Array<NoticeDocumentResult> , 
-    //     totalCount : number,
-    //     startDateString : string
-    // ){
-    //     let failure = 0;
-    //     let generated = 0;
-    //     let updated =  0;
-    //     let byHouseTypeSuccess =  0;
-    //     let isProcessedAPTAnnouncementByHouseTypeSuccess =  0;
-    //     let isProcessedAPTAnnouncementByHouseTypeHasCountError =  0;
-
-    //     result.map(e =>{
-    //         if(!e.isSuccess){
-    //             failure++;
-    //         }
-
-    //         if(e.isGenerated){
-    //             generated++;
-    //         }
-
-    //         if(e.isUpdated){
-    //             updated++;
-    //         }
-
-    //         if(e.isByHouseTypeInfoSuccess){
-    //             byHouseTypeSuccess++;
-    //         }
-
-    //         if(e.isProcessedAPTAnnouncementByHouseTypeSuccess){
-    //             isProcessedAPTAnnouncementByHouseTypeSuccess++;
-    //         }
-
-    //         if(e.isProcessedAPTAnnouncementByHouseTypeHasCountError){
-    //             isProcessedAPTAnnouncementByHouseTypeHasCountError++;
-    //         }
-    //     });
-        
-    //     return {
-    //         range: `~${startDateString}`,
-    //         addedDocuments: `${generated} / ${totalCount}`,
-    //         successRate: `${totalCount - failure} / ${totalCount}`,
-    //         updatedDocuments: `${updated} / ${totalCount}`,
-    //         byHouseTypeSuccessRate: `${byHouseTypeSuccess} / ${totalCount}`,
-    //         processedSuccessRate: `${isProcessedAPTAnnouncementByHouseTypeSuccess} / ${totalCount}`,
-    //         priceErrorRate: `${isProcessedAPTAnnouncementByHouseTypeHasCountError} / ${totalCount}`
-    //     };
-    // }
-
 }
