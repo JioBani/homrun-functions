@@ -9,7 +9,7 @@ import { Gender } from "../../enum/gender.enum";
 import { checkDisplayNameAvailability } from "../../utils/display_name_validator";
 import { TimeFormatter } from "../../utils/time_formatter";
 import { isString } from "../../utils/type_check";
-import { validateRegions } from "../../value/region.value";
+import { Region } from "src/value/region.value";
 
 export class AuthController{
 
@@ -81,7 +81,8 @@ export class AuthController{
           throw InvalidParameterError.fromParameter("birth");
         }
     
-        if(!interestedRegions || !validateRegions(interestedRegions))
+        //TODO 수정한 Region 기반 검증 구현
+        if(!interestedRegions || !Object.values(Region).includes(interestedRegions))
         {
           throw InvalidParameterError.fromParameter("interestedRegions");
         }
