@@ -23,12 +23,15 @@ import { SiteReviewController } from './feature/site_review/site_review.controll
 import { NoticeController } from './feature/notice/notice.controller';
 import { UserController } from './feature/user/user.controller';
 import { ApplyHommeApiService as ApplyHomeApiService } from './feature/applyhome/applyhome_api.service';
-import { logger } from 'firebase-functions';
+import { GeminiApiService } from './feature/gemini_api/gemini_api.service';
 
-//TODO 클라이언트의 요청 파라미터를 어디서 검증 할 것인지
-//TODO 파라미터가 null일때 
-//TODO 파라미터 타입검사하기
-//TODO 컨트롤러로 라우터 분리
+// import { logger } from 'firebase-functions';
+// import { withApiResponseHandler } from './middleware/api-response-handler';
+// import { Response} from 'express';
+// import {Request} from "firebase-functions/v2/https";
+// import { ApiResponse } from './model/api-response';
+//import { PushNotificationService } from './feature/notification/push_notification.service';
+//import { PushNotificationController } from './feature/notification/push_notification.controller';
 
 dotenv.config();
 
@@ -41,17 +44,20 @@ admin.initializeApp({
 
 const commentService = new CommentService();
 const siteReviewService = new SiteReviewService();
-const applyHomeApiService = new ApplyHomeApiService()
-const noticeService = new NoticeService(applyHomeApiService);
+const applyHomeApiService = new ApplyHomeApiService();
+const gemeniApiService = new GeminiApiService();
+const noticeService = new NoticeService(applyHomeApiService , gemeniApiService);
 const scrapService = new ScrapService();
 const userService = new UserService();  
 const authService = new AuthService(userService);
+//const pushNotificationService = new PushNotificationService();
 
 const authController = new AuthController(authService);
 const commentController = new CommentController(commentService);
 const siteReviewController = new SiteReviewController(siteReviewService);
 const noticeController = new NoticeController(noticeService,scrapService);
 const userController  = new UserController(userService)
+//const pushNotificationController = new PushNotificationController(pushNotificationService);
 
 export const sign_in = functions.region("asia-northeast3").https.onRequest(authController.signIn);
 
@@ -95,21 +101,17 @@ export const update_apt_info = functions.region('asia-northeast3')
   .pubsub
   .schedule('30 20 * * *') // 매일 18:30 실행
   .timeZone('Asia/Seoul') // 타임존 설정
-  .onRun(async (context) => {
-    logger.info('update_apt_info 함수 실행 시작'); // 함수 시작 로그
+  .onRun(async (context) => noticeService.updateAptInfo());
 
-    try {
-      await noticeService.updateAptInfo();
-      logger.info('update_apt_info 함수 실행 완료'); // 함수 완료 로그
-    } catch (error) {
-      logger.error('update_apt_info 함수 실행 중 오류 발생:', error); // 오류 발생 시 로그
-    }
-
-    return null;
-  });
+// 아파트 공고 업데이트 직후 주소 업데이트
+export const update_apt_address = functions.region('asia-northeast3')
+  .runWith({ timeoutSeconds: 540 })
+  .pubsub
+  .schedule('40 20 * * *') // 매일 18:30 실행
+  .timeZone('Asia/Seoul') // 타임존 설정
+  .onRun(async (context) => noticeService.updateAddress());
   
-
-// export const update_apt_info_force = functions.region("asia-northeast3").https.onRequest(
+// export const update_apt_info_force = functions.region("asia-northeast3").runWith({timeoutSeconds : 540, memory:'1GB'}).https.onRequest(
 //   withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
 //     return new ApiResponse({
 //       status: 200,
@@ -118,3 +120,11 @@ export const update_apt_info = functions.region('asia-northeast3')
 //   })
 // );
 
+// export const update_address_force = functions.region("asia-northeast3").runWith({timeoutSeconds : 540, memory:'1GB'}).https.onRequest(
+//   withApiResponseHandler(async (request: Request, response: Response): Promise<ApiResponse> => {
+//     return new ApiResponse({
+//       status: 200,
+//       data: await noticeService.updateAddress()
+//     });
+//   })
+// );
