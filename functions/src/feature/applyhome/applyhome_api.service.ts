@@ -13,7 +13,7 @@ import { ApplyHomeDto } from "./model/apply_home.dto";
 import { ApplyHomeFetchResult } from "./common/apply_home_fetch_result";
 import { ApplyHomeResult } from "./common/apply_home_result";
 import { ApplyHomeResultStatistics } from "./common/apply_home_result_statistics";
-//import { ApiResult } from "@/common/api_result";
+import { logger } from "firebase-functions/v1";
 
 export class ApplyHommeApiService{
 
@@ -81,36 +81,6 @@ export class ApplyHommeApiService{
         });
     }   
 
-
-    //  //#. url 위치의 API에서 정보를 가져와 객체로 반환
-    //  async getApiData2<T extends APTInfo>(factory : AptFactory<APTInfo>, url : string) : Promise<ApiResult<ParsingEntity<T>[]>>{
-    //     let response;
-
-    //     try{
-    //         response = await axios.get(url);
-    //     }catch(e){
-    //         return ApiResult.failure(e , null);
-    //     }
-
-    //     //#. 상태 코드가 200이 아닌 경우
-    //     if(response.status != 200){
-    //         return ApiResult.failure(new Error(`청약홈 API 통신 오류: 상태 코드 ${response.status}`) , response.data);
-    //     }
-
-    //     if(!Array.isArray(response.data.data)){
-    //         return ApiResult.failure(new Error(`청약홈 API 데이터 오류: data가 Array가 아님 ${response.data.data}`) , response.data);
-    //     }
-
-    //     const list : ParsingEntity<T>[] = response.data.data.map((item : any)=>{
-    //         return ParsingEntity.fromParsing(
-    //             ()=>factory.fromMap(item)
-    //         );
-    //     });
-
-    //     return ApiResult.success(list , response.data);
-    // }   
-
-
     //#. 공급 방식에 따라 API에서 정보를 가져와 ApplyHomeResult로 반환
     async getAptInfo(
         basicfactory : AptBasicInfoFactory<AptBasicInfo>,
@@ -170,8 +140,9 @@ export class ApplyHommeApiService{
                 startDate : startDate,
                 statistics : new ApplyHomeResultStatistics(fetchResult)
             });
+            
         }catch(e){
-            console.error(`[getAptInfo] ${e}`);
+            logger.error(`[getAptInfo] ${e}`);
             throw e;
         }
         
