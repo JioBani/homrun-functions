@@ -1,4 +1,4 @@
-import { applyhomeInfoDetailServiceKey } from "../../../sucure/apply_home_info_detail.service_key";
+import { applyhomeInfoDetailServiceKey } from "../../../secure/apply_home_info_detail.service_key";
 import { AptInfo } from "../model/apt.model";
 
 export class ApplyHomeApiUrls{
