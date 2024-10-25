@@ -7,7 +7,7 @@ export class SiteReviewReferences{
     }
 
     static getReviewImagePath(noticeId : string , docId : string) : string{
-        return `site_review/${noticeId}/${docId}/`;
+        return `site_review/${noticeId}/${docId}`;
     }
 
     static getReviewDocument(noticeId : string , reviewId : string) : DocumentReference{
