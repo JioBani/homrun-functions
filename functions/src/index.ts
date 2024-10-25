@@ -92,7 +92,7 @@ export const delete_all_notice_scrap = functions.region("asia-northeast3").https
 export const update_user_info = functions.region("asia-northeast3").https.onRequest(userController.updateUserInfo);
 
 //#. 닉네임
-export const check_display_name = functions.region("asia-northeast3").https.onRequest(userController.updateUserInfo);
+export const check_display_name = functions.region("asia-northeast3").https.onRequest(userController.checkDisplayName);
 
 
 // 아파트 공고 업데이트
