@@ -50,9 +50,9 @@ function validateDisplayName(displayName: string): void {
     const length = displayName.length;
   
     const koreanNameMin = 2; // 최소 한글 닉네임 길이 설정
-    const koreanNameMax = 10; // 최대 한글 닉네임 길이 설정
-    const englishNameMin = 3; // 최소 영문 닉네임 길이 설정
-    const englishNameMax = 15; // 최대 영문 닉네임 길이 설정
+    const koreanNameMax = 12; // 최대 한글 닉네임 길이 설정
+    const englishNameMin = 4; // 최소 영문 닉네임 길이 설정
+    const englishNameMax = 16; // 최대 영문 닉네임 길이 설정
 
     
     if (hasKorean) { 
