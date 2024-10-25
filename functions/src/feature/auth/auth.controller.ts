@@ -9,7 +9,7 @@ import { Gender } from "../../enum/gender.enum";
 import { checkDisplayNameAvailability } from "../../utils/display_name_validator";
 import { TimeFormatter } from "../../utils/time_formatter";
 import { isString } from "../../utils/type_check";
-import { Region } from "src/value/region.value";
+import { Region } from "../../value/region.value";
 
 export class AuthController{
 
